@@ -339,192 +339,368 @@ class AdminManager
         .uadt-posts-page-app {
             background: #fff;
             border: 1px solid #c3c4c7;
-            border-radius: 4px;
-            box-shadow: 0 1px 1px rgba(0,0,0,.04);
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,.08);
+            margin-top: 20px;
+            overflow: hidden;
         }
 
         .uadt-posts-header {
-            padding: 20px;
-            border-bottom: 1px solid #c3c4c7;
-            background: #f6f7f7;
-            border-radius: 4px 4px 0 0;
+            padding: 24px;
+            border-bottom: 1px solid #e1e1e1;
+            background: linear-gradient(135deg, #f8f9fa 0%, #f1f3f4 100%);
+            border-radius: 8px 8px 0 0;
+        }
+
+        .uadt-header-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1d2327;
+            margin: 0 0 16px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .uadt-header-title::before {
+            content: "⚡";
+            font-size: 20px;
+        }
+
+        .uadt-search-container {
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
 
         .uadt-search-input {
-            padding: 8px 12px;
-            border: 1px solid #8c8f94;
-            border-radius: 4px;
+            padding: 12px 16px 12px 44px;
+            border: 2px solid #e1e1e1;
+            border-radius: 8px;
             font-size: 14px;
-            width: 300px;
-            box-shadow: 0 0 0 transparent;
-            transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+            width: 320px;
+            background: #fff;
+            box-shadow: 0 1px 3px rgba(0,0,0,.1);
+            transition: all 0.2s ease;
         }
 
         .uadt-search-input:focus {
-            border-color: #2271b1;
-            box-shadow: 0 0 0 1px #2271b1;
-            outline: 2px solid transparent;
+            border-color: #0073aa;
+            box-shadow: 0 0 0 3px rgba(0,115,170,.1);
+            outline: none;
+        }
+
+        .uadt-search-icon {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #8c8f94;
+            font-size: 16px;
+        }
+
+        .uadt-search-input:focus + .uadt-search-icon {
+            color: #0073aa;
+        }
+
+        .uadt-table-container {
+            overflow: hidden;
         }
 
         .uadt-posts-table {
             width: 100%;
             border-collapse: collapse;
             background: #fff;
+            font-size: 14px;
         }
 
         .uadt-posts-table th {
-            background: #f6f7f7;
-            border-bottom: 1px solid #c3c4c7;
-            padding: 12px 15px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #f1f3f4 100%);
+            border-bottom: 2px solid #e1e1e1;
+            padding: 16px 20px;
             text-align: left;
             font-weight: 600;
             color: #1d2327;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            position: sticky;
+            top: 0;
+            z-index: 10;
         }
 
         .uadt-posts-table td {
-            padding: 12px 15px;
-            border-bottom: 1px solid #c3c4c7;
+            padding: 16px 20px;
+            border-bottom: 1px solid #f1f1f1;
             vertical-align: top;
         }
 
+        .uadt-posts-table tbody tr {
+            transition: all 0.2s ease;
+        }
+
         .uadt-posts-table tbody tr:hover {
-            background: #f6f7f7;
+            background: linear-gradient(135deg, #f8f9ff 0%, #f0f4ff 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0,0,0,.08);
         }
 
         .uadt-post-title {
             font-weight: 600;
             color: #1d2327;
             text-decoration: none;
-            font-size: 14px;
+            font-size: 15px;
+            line-height: 1.4;
+            display: block;
+            margin-bottom: 4px;
+            transition: color 0.2s ease;
         }
 
         .uadt-post-title:hover {
-            color: #135e96;
+            color: #0073aa;
         }
 
         .uadt-post-excerpt {
             color: #646970;
             font-size: 13px;
-            margin-top: 4px;
-            line-height: 1.4;
+            line-height: 1.5;
+            margin-top: 6px;
+            opacity: 0.9;
+        }
+
+        .uadt-post-meta {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 8px;
+            font-size: 12px;
+            color: #8c8f94;
+        }
+
+        .uadt-post-id {
+            background: #f1f1f1;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: monospace;
         }
 
         .uadt-status-badge {
-            padding: 4px 8px;
-            border-radius: 3px;
-            font-size: 12px;
-            font-weight: 500;
-            text-transform: capitalize;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            box-shadow: 0 1px 3px rgba(0,0,0,.1);
         }
 
         .uadt-status-publish {
-            background: #00a32a;
+            background: linear-gradient(135deg, #00a32a 0%, #00d084 100%);
             color: white;
+        }
+
+        .uadt-status-publish::before {
+            content: "●";
+            color: #90ee90;
         }
 
         .uadt-status-draft {
-            background: #dba617;
+            background: linear-gradient(135deg, #dba617 0%, #ffb900 100%);
             color: white;
+        }
+
+        .uadt-status-draft::before {
+            content: "◐";
+            color: #fff3cd;
         }
 
         .uadt-status-private {
-            background: #2271b1;
+            background: linear-gradient(135deg, #2271b1 0%, #0073aa 100%);
             color: white;
+        }
+
+        .uadt-status-private::before {
+            content: "🔒";
+            font-size: 10px;
+        }
+
+        .uadt-actions-container {
+            display: flex;
+            gap: 6px;
+            align-items: center;
         }
 
         .uadt-action-button {
-            padding: 4px 8px;
-            border: 1px solid #2271b1;
-            background: #2271b1;
+            padding: 8px 14px;
+            border: 2px solid transparent;
+            background: linear-gradient(135deg, #0073aa 0%, #005177 100%);
             color: white;
             text-decoration: none;
-            border-radius: 3px;
+            border-radius: 6px;
             font-size: 12px;
-            margin-right: 5px;
-            display: inline-block;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            transition: all 0.2s ease;
+            box-shadow: 0 1px 3px rgba(0,0,0,.1);
         }
 
         .uadt-action-button:hover {
-            background: #135e96;
-            border-color: #135e96;
+            background: linear-gradient(135deg, #005177 0%, #003d5c 100%);
             color: white;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 6px rgba(0,0,0,.15);
         }
 
         .uadt-action-button.secondary {
-            background: #f6f7f7;
+            background: linear-gradient(135deg, #f6f7f7 0%, #e8e9ea 100%);
             border-color: #c3c4c7;
             color: #2c3338;
         }
 
         .uadt-action-button.secondary:hover {
-            background: #f0f0f1;
+            background: linear-gradient(135deg, #e8e9ea 0%, #dcdcde 100%);
             border-color: #8c8f94;
             color: #2c3338;
         }
 
+        .uadt-action-button::before {
+            font-size: 10px;
+        }
+
+        .uadt-action-button:not(.secondary)::before {
+            content: "✏️";
+        }
+
+        .uadt-action-button.secondary::before {
+            content: "👁️";
+        }
+
         .uadt-pagination {
-            padding: 15px 20px;
-            border-top: 1px solid #c3c4c7;
-            background: #f6f7f7;
+            padding: 20px 24px;
+            border-top: 2px solid #e1e1e1;
+            background: linear-gradient(135deg, #f8f9fa 0%, #f1f3f4 100%);
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border-radius: 0 0 4px 4px;
+            border-radius: 0 0 8px 8px;
         }
 
         .uadt-pagination-info {
             color: #646970;
             font-size: 14px;
+            font-weight: 500;
         }
 
         .uadt-pagination-controls {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
         }
 
         .uadt-pagination-button {
-            padding: 6px 12px;
-            border: 1px solid #c3c4c7;
-            background: #f6f7f7;
+            padding: 10px 16px;
+            border: 2px solid #e1e1e1;
+            background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
             color: #2c3338;
             text-decoration: none;
-            border-radius: 3px;
+            border-radius: 6px;
             font-size: 13px;
+            font-weight: 500;
             cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 1px 3px rgba(0,0,0,.1);
         }
 
-        .uadt-pagination-button:hover {
-            background: #f0f0f1;
-            border-color: #8c8f94;
-            color: #2c3338;
+        .uadt-pagination-button:hover:not(:disabled) {
+            background: linear-gradient(135deg, #0073aa 0%, #005177 100%);
+            border-color: #0073aa;
+            color: white;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 6px rgba(0,0,0,.15);
         }
 
         .uadt-pagination-button:disabled {
-            opacity: 0.5;
+            opacity: 0.4;
             cursor: not-allowed;
+            background: #f1f1f1;
+            border-color: #ddd;
+        }
+
+        .uadt-page-info {
+            padding: 8px 12px;
+            background: rgba(0,115,170,.1);
+            border-radius: 4px;
+            font-weight: 600;
+            color: #0073aa;
         }
 
         .uadt-loading-container {
-            padding: 60px 20px;
+            padding: 80px 20px;
             text-align: center;
             color: #646970;
+            background: linear-gradient(135deg, #f8f9ff 0%, #f0f4ff 100%);
+        }
+
+        .uadt-loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #e1e1e1;
+            border-top: 4px solid #0073aa;
+            border-radius: 50%;
+            animation: uadt-spin 1s linear infinite;
+            margin: 0 auto 16px;
+        }
+
+        @keyframes uadt-spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
 
         .uadt-error-container {
             padding: 40px 20px;
             text-align: center;
             color: #d63638;
-            background: #fcf0f1;
-            border: 1px solid #f0a5a8;
-            border-radius: 4px;
+            background: linear-gradient(135deg, #fcf0f1 0%, #fde7e9 100%);
+            border: 2px solid #f0a5a8;
+            border-radius: 8px;
             margin: 20px;
         }
 
         .uadt-empty-container {
-            padding: 60px 20px;
+            padding: 80px 20px;
             text-align: center;
             color: #646970;
+            background: linear-gradient(135deg, #f8f9fa 0%, #f1f3f4 100%);
+        }
+
+        .uadt-empty-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        .uadt-stats-container {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            font-size: 13px;
+        }
+
+        .uadt-stat-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 8px;
+            background: rgba(0,115,170,.1);
+            border-radius: 4px;
+            color: #0073aa;
+            font-weight: 500;
         }
         </style>
 
@@ -600,35 +776,50 @@ class AdminManager
                 return React.createElement('div', { className: 'uadt-posts-page-app' },
                     // Header with search
                     React.createElement('div', { className: 'uadt-posts-header' },
+                        React.createElement('h2', { className: 'uadt-header-title' }, 'Enhanced Posts Manager'),
                         React.createElement('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' } },
-                            React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: '15px' } },
+                            React.createElement('div', { className: 'uadt-search-container' },
                                 React.createElement('input', {
                                     type: 'text',
-                                    placeholder: 'Search posts...',
+                                    placeholder: 'Search posts by title, content, or author...',
                                     value: filters.search,
                                     onChange: handleSearchChange,
                                     className: 'uadt-search-input'
                                 }),
-                                React.createElement('span', { className: 'uadt-pagination-info' },
-                                    `${total} items found`
+                                React.createElement('span', { className: 'uadt-search-icon' }, '🔍'),
+                                React.createElement('div', { className: 'uadt-stats-container' },
+                                    React.createElement('div', { className: 'uadt-stat-item' },
+                                        React.createElement('span', null, '📊'),
+                                        `${total} items`
+                                    ),
+                                    React.createElement('div', { className: 'uadt-stat-item' },
+                                        React.createElement('span', null, '📄'),
+                                        `Page ${filters.page}`
+                                    )
                                 )
                             ),
                             React.createElement('a', {
                                 href: window.location.pathname + window.location.search.replace(/[?&]uadt_mode=enhanced/, ''),
-                                className: 'button',
+                                className: 'button button-secondary',
                                 style: { textDecoration: 'none' }
-                            }, 'Switch to Standard View')
+                            }, '← Standard View')
                         )
                     ),
 
                     // Content
                     loading ?
                         React.createElement('div', { className: 'uadt-loading-container' },
-                            React.createElement('div', { style: { fontSize: '16px' } }, 'Loading posts...')
+                            React.createElement('div', { className: 'uadt-loading-spinner' }),
+                            React.createElement('div', { style: { fontSize: '16px', fontWeight: '500' } }, 'Loading posts...'),
+                            React.createElement('div', { style: { fontSize: '14px', marginTop: '8px', opacity: '0.7' } }, 'Please wait while we fetch your content')
                         ) :
                     error ?
-                        React.createElement('div', { className: 'uadt-error-container' }, error) :
-                        React.createElement('div', null,
+                        React.createElement('div', { className: 'uadt-error-container' },
+                            React.createElement('div', { style: { fontSize: '24px', marginBottom: '12px' } }, '⚠️'),
+                            React.createElement('div', { style: { fontSize: '16px', fontWeight: '600', marginBottom: '8px' } }, 'Error Loading Posts'),
+                            React.createElement('div', null, error)
+                        ) :
+                        React.createElement('div', { className: 'uadt-table-container' },
                             // Table
                             React.createElement('table', { className: 'uadt-posts-table' },
                                 React.createElement('thead', null,
@@ -643,38 +834,56 @@ class AdminManager
                                 React.createElement('tbody', null,
                                     posts.length === 0 ?
                                         React.createElement('tr', null,
-                                            React.createElement('td', { colSpan: 5, className: 'uadt-empty-container' }, 'No posts found')
+                                            React.createElement('td', { colSpan: 5, className: 'uadt-empty-container' },
+                                                React.createElement('div', { className: 'uadt-empty-icon' }, '📝'),
+                                                React.createElement('div', { style: { fontSize: '16px', fontWeight: '500', marginBottom: '8px' } }, 'No posts found'),
+                                                React.createElement('div', { style: { fontSize: '14px', opacity: '0.7' } }, 'Try adjusting your search criteria')
+                                            )
                                         ) :
                                         posts.map(post =>
                                             React.createElement('tr', { key: post.id },
-                                                React.createElement('td', null,
+                                                React.createElement('td', { style: { width: '45%' } },
                                                     React.createElement('a', {
                                                         href: post.edit_link || '#',
                                                         className: 'uadt-post-title'
                                                     }, post.title || '(No title)'),
                                                     post.excerpt ? React.createElement('div', { className: 'uadt-post-excerpt' },
-                                                        post.excerpt.substring(0, 120) + (post.excerpt.length > 120 ? '...' : '')
-                                                    ) : null
+                                                        post.excerpt.substring(0, 140) + (post.excerpt.length > 140 ? '...' : '')
+                                                    ) : null,
+                                                    React.createElement('div', { className: 'uadt-post-meta' },
+                                                        React.createElement('span', { className: 'uadt-post-id' }, `ID: ${post.id}`),
+                                                        React.createElement('span', null, '•'),
+                                                        React.createElement('span', null, `${post.post_type || 'post'}`)
+                                                    )
                                                 ),
-                                                React.createElement('td', null, post.author),
-                                                React.createElement('td', null,
+                                                React.createElement('td', { style: { width: '15%' } },
+                                                    React.createElement('div', { style: { fontWeight: '500' } }, post.author)
+                                                ),
+                                                React.createElement('td', { style: { width: '12%' } },
                                                     React.createElement('span', {
                                                         className: `uadt-status-badge uadt-status-${post.status}`
                                                     }, post.status_label)
                                                 ),
-                                                React.createElement('td', null, post.date_formatted),
-                                                React.createElement('td', null,
-                                                    React.createElement('div', { style: { display: 'flex', gap: '5px' } },
+                                                React.createElement('td', { style: { width: '15%' } },
+                                                    React.createElement('div', { style: { fontSize: '13px' } }, post.date_formatted),
+                                                    React.createElement('div', { style: { fontSize: '12px', color: '#8c8f94', marginTop: '2px' } },
+                                                        `Modified: ${post.modified_formatted || 'N/A'}`
+                                                    )
+                                                ),
+                                                React.createElement('td', { style: { width: '13%' } },
+                                                    React.createElement('div', { className: 'uadt-actions-container' },
                                                         post.edit_link ?
                                                             React.createElement('a', {
                                                                 href: post.edit_link,
-                                                                className: 'uadt-action-button'
+                                                                className: 'uadt-action-button',
+                                                                title: 'Edit this post'
                                                             }, 'Edit') : null,
                                                         post.view_link ?
                                                             React.createElement('a', {
                                                                 href: post.view_link,
                                                                 className: 'uadt-action-button secondary',
-                                                                target: '_blank'
+                                                                target: '_blank',
+                                                                title: 'View this post'
                                                             }, 'View') : null
                                                     )
                                                 )
@@ -686,24 +895,31 @@ class AdminManager
                             // Pagination
                             totalPages > 1 ? React.createElement('div', { className: 'uadt-pagination' },
                                 React.createElement('div', { className: 'uadt-pagination-info' },
-                                    `Showing page ${filters.page} of ${totalPages} (${total} total items)`
+                                    `Showing ${((filters.page - 1) * filters.per_page) + 1}-${Math.min(filters.page * filters.per_page, total)} of ${total} items`
                                 ),
                                 React.createElement('div', { className: 'uadt-pagination-controls' },
                                     React.createElement('button', {
                                         className: 'uadt-pagination-button',
                                         onClick: () => handlePageChange(filters.page - 1),
-                                        disabled: filters.page <= 1
-                                    }, '‹ Previous'),
-                                    React.createElement('span', { style: { margin: '0 10px', fontSize: '14px' } },
+                                        disabled: filters.page <= 1,
+                                        title: 'Previous page'
+                                    }, '← Previous'),
+                                    React.createElement('span', { className: 'uadt-page-info' },
                                         `Page ${filters.page} of ${totalPages}`
                                     ),
                                     React.createElement('button', {
                                         className: 'uadt-pagination-button',
                                         onClick: () => handlePageChange(filters.page + 1),
-                                        disabled: filters.page >= totalPages
-                                    }, 'Next ›')
+                                        disabled: filters.page >= totalPages,
+                                        title: 'Next page'
+                                    }, 'Next →')
                                 )
-                            ) : null
+                            ) : React.createElement('div', { className: 'uadt-pagination' },
+                                React.createElement('div', { className: 'uadt-pagination-info' },
+                                    `Showing all ${total} items`
+                                ),
+                                React.createElement('div', null)
+                            )
                         )
                 );
             }
