@@ -1,0 +1,91 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* WordPress Admin Integration Styles */
+.uadt-app {
+  @apply font-wp text-wp-text;
+}
+
+/* Custom Components */
+.uadt-button {
+  @apply inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm;
+}
+
+.uadt-button-primary {
+  @apply uadt-button text-white bg-wp-blue hover:bg-wp-blue-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-wp-blue;
+}
+
+.uadt-button-secondary {
+  @apply uadt-button text-wp-text bg-white border-wp-gray-dark hover:bg-wp-gray focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-wp-blue;
+}
+
+.uadt-input {
+  @apply block w-full px-3 py-2 border border-wp-gray-dark rounded-md shadow-sm placeholder-wp-text-light focus:outline-none focus:ring-wp-blue focus:border-wp-blue;
+}
+
+.uadt-select {
+  @apply uadt-input pr-10 bg-white;
+}
+
+.uadt-table {
+  @apply min-w-full divide-y divide-wp-gray-dark;
+}
+
+.uadt-table th {
+  @apply px-6 py-3 text-left text-xs font-medium text-wp-text-light uppercase tracking-wider bg-wp-gray;
+}
+
+.uadt-table td {
+  @apply px-6 py-4 whitespace-nowrap text-sm text-wp-text;
+}
+
+.uadt-table tr:nth-child(even) {
+  @apply bg-wp-gray bg-opacity-30;
+}
+
+.uadt-table tr:hover {
+  @apply bg-wp-blue bg-opacity-5;
+}
+
+/* Loading States */
+.uadt-loading {
+  @apply flex items-center justify-center p-8;
+}
+
+.uadt-spinner {
+  @apply animate-spin h-5 w-5 text-wp-blue;
+}
+
+/* Filter Panel */
+.uadt-filter-panel {
+  @apply bg-white border border-wp-gray-dark rounded-lg p-4 mb-6;
+}
+
+.uadt-filter-row {
+  @apply flex flex-wrap gap-4 items-end;
+}
+
+.uadt-filter-group {
+  @apply flex flex-col;
+}
+
+.uadt-filter-label {
+  @apply block text-sm font-medium text-wp-text mb-1;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .uadt-filter-row {
+    @apply flex-col;
+  }
+  
+  .uadt-table {
+    @apply text-xs;
+  }
+  
+  .uadt-table th,
+  .uadt-table td {
+    @apply px-3 py-2;
+  }
+}

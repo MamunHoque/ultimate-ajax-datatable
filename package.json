@@ -1,0 +1,58 @@
+{
+  "name": "ultimate-ajax-datatable",
+  "version": "1.0.0",
+  "description": "A practical WordPress plugin that enhances admin list tables with modern AJAX DataTable interface and powerful multiple filter options.",
+  "main": "index.js",
+  "scripts": {
+    "dev": "webpack --mode development --watch",
+    "build": "webpack --mode production",
+    "build:dev": "webpack --mode development",
+    "lint": "eslint src --ext .ts,.tsx",
+    "lint:fix": "eslint src --ext .ts,.tsx --fix",
+    "type-check": "tsc --noEmit"
+  },
+  "keywords": [
+    "wordpress",
+    "plugin",
+    "datatable",
+    "react",
+    "typescript",
+    "ajax",
+    "filtering"
+  ],
+  "author": "Ultimate Ajax DataTable",
+  "license": "GPL-2.0-or-later",
+  "devDependencies": {
+    "@types/react": "^18.2.45",
+    "@types/react-dom": "^18.2.18",
+    "@types/wordpress__api-fetch": "^6.0.4",
+    "@typescript-eslint/eslint-plugin": "^6.15.0",
+    "@typescript-eslint/parser": "^6.15.0",
+    "css-loader": "^6.8.1",
+    "eslint": "^8.56.0",
+    "eslint-plugin-react": "^7.33.2",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "mini-css-extract-plugin": "^2.7.6",
+    "postcss": "^8.4.32",
+    "postcss-loader": "^7.3.4",
+    "tailwindcss": "^3.4.0",
+    "ts-loader": "^9.5.1",
+    "typescript": "^5.3.3",
+    "webpack": "^5.89.0",
+    "webpack-cli": "^5.1.4"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "^5.17.0",
+    "@wordpress/api-fetch": "^6.49.0",
+    "@wordpress/element": "^5.29.0",
+    "@wordpress/i18n": "^4.52.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "browserslist": [
+    "> 1%",
+    "last 2 versions",
+    "not dead",
+    "not ie 11"
+  ]
+}
