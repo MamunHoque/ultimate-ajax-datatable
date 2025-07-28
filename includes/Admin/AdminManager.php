@@ -26,6 +26,10 @@ class AdminManager
         add_action('admin_menu', [$this, 'add_admin_menu']);
         add_action('admin_enqueue_scripts', [$this, 'enqueue_admin_scripts']);
         add_action('admin_init', [$this, 'admin_init']);
+
+        // Add data table to standard WordPress posts page
+        add_action('load-edit.php', [$this, 'maybe_replace_posts_table']);
+        add_action('admin_footer-edit.php', [$this, 'add_posts_page_integration']);
     }
 
     /**
@@ -72,8 +76,20 @@ class AdminManager
      */
     public function enqueue_admin_scripts($hook)
     {
-        // Only load on our admin pages
-        if (strpos($hook, 'uadt-') === false) {
+        // Load on our admin pages or edit.php pages for enabled post types
+        $should_load = false;
+
+        if (strpos($hook, 'uadt-') !== false) {
+            $should_load = true;
+        } elseif ($hook === 'edit.php') {
+            global $typenow;
+            $enabled_post_types = get_option('uadt_enabled_post_types', ['post']);
+            if (in_array($typenow, $enabled_post_types)) {
+                $should_load = true;
+            }
+        }
+
+        if (!$should_load) {
             return;
         }
 
@@ -263,5 +279,261 @@ class AdminManager
         add_action('admin_notices', function() {
             echo '<div class="notice notice-success"><p>' . esc_html__('Settings saved successfully!', 'ultimate-ajax-datatable') . '</p></div>';
         });
+    }
+
+    /**
+     * Check if we should replace the posts table on edit.php
+     */
+    public function maybe_replace_posts_table()
+    {
+        global $typenow;
+
+        // Only apply to enabled post types
+        $enabled_post_types = get_option('uadt_enabled_post_types', ['post']);
+
+        if (!in_array($typenow, $enabled_post_types)) {
+            return;
+        }
+
+        // Check if user wants to use our data table (add a URL parameter to toggle)
+        if (isset($_GET['uadt_mode']) && $_GET['uadt_mode'] === 'enhanced') {
+            // Add our enhanced mode
+            add_action('admin_notices', [$this, 'show_enhanced_mode_notice']);
+        } else {
+            // Add option to switch to enhanced mode
+            add_action('admin_notices', [$this, 'show_enhanced_mode_option']);
+        }
+    }
+
+    /**
+     * Add our data table integration to the posts page
+     */
+    public function add_posts_page_integration()
+    {
+        global $typenow;
+
+        // Only apply to enabled post types
+        $enabled_post_types = get_option('uadt_enabled_post_types', ['post']);
+
+        if (!in_array($typenow, $enabled_post_types)) {
+            return;
+        }
+
+        // Only show enhanced mode if requested
+        if (!isset($_GET['uadt_mode']) || $_GET['uadt_mode'] !== 'enhanced') {
+            return;
+        }
+
+        ?>
+        <script type="text/javascript">
+        jQuery(document).ready(function($) {
+            // Hide the default posts table
+            $('.wp-list-table').hide();
+            $('.tablenav').hide();
+            $('.search-box').hide();
+
+            // Add our enhanced data table container
+            $('.wrap h1').after('<div id="uadt-posts-integration" style="margin-top: 20px;"></div>');
+
+            // Initialize our React app in the new container
+            if (typeof React !== 'undefined' && typeof ReactDOM !== 'undefined') {
+                initializePostsPageApp();
+            }
+        });
+
+        function initializePostsPageApp() {
+            const { useState, useEffect } = React;
+            const container = document.getElementById('uadt-posts-integration');
+
+            function PostsPageApp() {
+                const [posts, setPosts] = useState([]);
+                const [loading, setLoading] = useState(true);
+                const [error, setError] = useState(null);
+                const [filters, setFilters] = useState({
+                    search: '',
+                    page: 1,
+                    per_page: 25,
+                    post_type: '<?php echo esc_js($typenow); ?>'
+                });
+                const [totalPages, setTotalPages] = useState(1);
+                const [total, setTotal] = useState(0);
+
+                useEffect(() => {
+                    loadPosts();
+                }, [filters]);
+
+                const loadPosts = async () => {
+                    try {
+                        setLoading(true);
+                        const response = await window.uadtAPI.getPosts(filters);
+                        setPosts(response.posts || []);
+                        setTotalPages(response.pages || 1);
+                        setTotal(response.total || 0);
+                        setError(null);
+                    } catch (err) {
+                        setError('Failed to load posts: ' + err.message);
+                        console.error('Error loading posts:', err);
+                    } finally {
+                        setLoading(false);
+                    }
+                };
+
+                const handleSearchChange = (e) => {
+                    setFilters(prev => ({
+                        ...prev,
+                        search: e.target.value,
+                        page: 1
+                    }));
+                };
+
+                const handlePageChange = (newPage) => {
+                    setFilters(prev => ({
+                        ...prev,
+                        page: newPage
+                    }));
+                };
+
+                return React.createElement('div', { className: 'uadt-posts-page-app' },
+                    // Header with search
+                    React.createElement('div', { className: 'uadt-posts-header', style: { marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' } },
+                        React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: '10px' } },
+                            React.createElement('input', {
+                                type: 'text',
+                                placeholder: 'Search posts...',
+                                value: filters.search,
+                                onChange: handleSearchChange,
+                                style: {
+                                    padding: '8px 12px',
+                                    border: '1px solid #ddd',
+                                    borderRadius: '4px',
+                                    width: '300px'
+                                }
+                            }),
+                            React.createElement('span', { style: { color: '#666', fontSize: '14px' } },
+                                `${total} items found`
+                            )
+                        ),
+                        React.createElement('a', {
+                            href: window.location.pathname + window.location.search.replace(/[?&]uadt_mode=enhanced/, ''),
+                            className: 'button',
+                            style: { textDecoration: 'none' }
+                        }, 'Switch to Standard View')
+                    ),
+
+                    // Content
+                    loading ?
+                        React.createElement('div', { style: { padding: '40px', textAlign: 'center' } }, 'Loading posts...') :
+                    error ?
+                        React.createElement('div', { style: { padding: '40px', textAlign: 'center', color: '#d63638' } }, error) :
+                        React.createElement('div', null,
+                            // Table
+                            React.createElement('table', { className: 'wp-list-table widefat fixed striped posts' },
+                                React.createElement('thead', null,
+                                    React.createElement('tr', null,
+                                        React.createElement('th', { style: { width: '50%' } }, 'Title'),
+                                        React.createElement('th', null, 'Author'),
+                                        React.createElement('th', null, 'Status'),
+                                        React.createElement('th', null, 'Date'),
+                                        React.createElement('th', null, 'Actions')
+                                    )
+                                ),
+                                React.createElement('tbody', null,
+                                    posts.length === 0 ?
+                                        React.createElement('tr', null,
+                                            React.createElement('td', { colSpan: 5, style: { textAlign: 'center', padding: '40px' } }, 'No posts found')
+                                        ) :
+                                        posts.map(post =>
+                                            React.createElement('tr', { key: post.id },
+                                                React.createElement('td', null,
+                                                    React.createElement('strong', null, post.title || '(No title)'),
+                                                    post.excerpt ? React.createElement('div', { style: { color: '#666', fontSize: '13px', marginTop: '4px' } }, post.excerpt.substring(0, 100) + '...') : null
+                                                ),
+                                                React.createElement('td', null, post.author),
+                                                React.createElement('td', null,
+                                                    React.createElement('span', {
+                                                        style: {
+                                                            padding: '2px 8px',
+                                                            borderRadius: '3px',
+                                                            fontSize: '12px',
+                                                            backgroundColor: post.status === 'publish' ? '#00a32a' : '#dba617',
+                                                            color: 'white'
+                                                        }
+                                                    }, post.status_label)
+                                                ),
+                                                React.createElement('td', null, post.date_formatted),
+                                                React.createElement('td', null,
+                                                    React.createElement('div', { style: { display: 'flex', gap: '8px' } },
+                                                        post.edit_link ?
+                                                            React.createElement('a', {
+                                                                href: post.edit_link,
+                                                                className: 'button button-small'
+                                                            }, 'Edit') : null,
+                                                        post.view_link ?
+                                                            React.createElement('a', {
+                                                                href: post.view_link,
+                                                                className: 'button button-small',
+                                                                target: '_blank'
+                                                            }, 'View') : null
+                                                    )
+                                                )
+                                            )
+                                        )
+                                )
+                            ),
+
+                            // Pagination
+                            totalPages > 1 ? React.createElement('div', { className: 'tablenav bottom', style: { marginTop: '20px' } },
+                                React.createElement('div', { className: 'tablenav-pages' },
+                                    React.createElement('span', { className: 'displaying-num' }, `${total} items`),
+                                    React.createElement('span', { className: 'pagination-links' },
+                                        filters.page > 1 ?
+                                            React.createElement('a', {
+                                                className: 'button',
+                                                onClick: () => handlePageChange(filters.page - 1),
+                                                style: { marginRight: '5px', cursor: 'pointer' }
+                                            }, '‹ Previous') : null,
+                                        React.createElement('span', { style: { margin: '0 10px' } },
+                                            `Page ${filters.page} of ${totalPages}`
+                                        ),
+                                        filters.page < totalPages ?
+                                            React.createElement('a', {
+                                                className: 'button',
+                                                onClick: () => handlePageChange(filters.page + 1),
+                                                style: { marginLeft: '5px', cursor: 'pointer' }
+                                            }, 'Next ›') : null
+                                    )
+                                )
+                            ) : null
+                        )
+                );
+            }
+
+            const root = ReactDOM.createRoot(container);
+            root.render(React.createElement(PostsPageApp));
+        }
+        </script>
+        <?php
+    }
+
+    /**
+     * Show notice when in enhanced mode
+     */
+    public function show_enhanced_mode_notice()
+    {
+        echo '<div class="notice notice-info"><p>';
+        echo '<strong>Enhanced DataTable Mode Active</strong> - You are viewing posts with the Ultimate Ajax DataTable enhanced interface. ';
+        echo '<a href="' . esc_url(remove_query_arg('uadt_mode')) . '">Switch back to standard view</a>';
+        echo '</p></div>';
+    }
+
+    /**
+     * Show option to switch to enhanced mode
+     */
+    public function show_enhanced_mode_option()
+    {
+        echo '<div class="notice notice-info is-dismissible"><p>';
+        echo '<strong>Ultimate Ajax DataTable Available</strong> - Try our enhanced posts management interface with advanced filtering and search. ';
+        echo '<a href="' . esc_url(add_query_arg('uadt_mode', 'enhanced')) . '" class="button button-primary">Try Enhanced View</a>';
+        echo '</p></div>';
     }
 }
