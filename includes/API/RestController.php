@@ -67,6 +67,7 @@ class RestController
             'methods' => 'POST',
             'callback' => [$this, 'export_data'],
             'permission_callback' => [$this, 'check_permissions'],
+            'args' => $this->get_export_args()
         ]);
 
         // Filter options endpoint
@@ -238,6 +239,18 @@ class RestController
     {
         $action = $request->get_param('action');
         $post_ids = $request->get_param('post_ids');
+        $confirm = $request->get_param('confirm');
+
+        // Validate action
+        $allowed_actions = ['publish', 'draft', 'private', 'trash', 'delete'];
+        if (!in_array($action, $allowed_actions)) {
+            return new \WP_Error('invalid_action', 'Invalid bulk action', ['status' => 400]);
+        }
+
+        // Check for confirmation on destructive actions
+        if (in_array($action, ['trash', 'delete']) && !$confirm) {
+            return new \WP_Error('confirmation_required', 'Confirmation required for destructive actions', ['status' => 400]);
+        }
 
         if (!SecurityManager::can_perform_bulk_action($action, $post_ids)) {
             return new \WP_Error('insufficient_permissions', 'Insufficient permissions for bulk action', ['status' => 403]);
@@ -246,27 +259,75 @@ class RestController
         $results = [];
         $success_count = 0;
         $error_count = 0;
+        $errors = [];
 
         foreach ($post_ids as $post_id) {
             $result = $this->perform_bulk_action($action, $post_id);
             $results[$post_id] = $result;
-            
+
             if ($result['success']) {
                 $success_count++;
             } else {
                 $error_count++;
+                $errors[] = [
+                    'post_id' => $post_id,
+                    'error' => $result['message'] ?? 'Unknown error'
+                ];
             }
         }
 
+        $message = $this->get_bulk_action_message($action, $success_count, $error_count);
+
         return new \WP_REST_Response([
             'success' => $error_count === 0,
+            'message' => $message,
             'results' => $results,
             'summary' => [
                 'success_count' => $success_count,
                 'error_count' => $error_count,
-                'total' => count($post_ids)
+                'total' => count($post_ids),
+                'errors' => $errors
             ]
         ], 200);
+    }
+
+    /**
+     * Get bulk action message
+     *
+     * @param string $action
+     * @param int $success_count
+     * @param int $error_count
+     * @return string
+     */
+    private function get_bulk_action_message($action, $success_count, $error_count)
+    {
+        $action_labels = [
+            'publish' => 'published',
+            'draft' => 'moved to draft',
+            'private' => 'made private',
+            'trash' => 'moved to trash',
+            'delete' => 'deleted permanently'
+        ];
+
+        $action_label = $action_labels[$action] ?? $action;
+
+        if ($error_count === 0) {
+            return sprintf(
+                '%d post%s %s successfully.',
+                $success_count,
+                $success_count !== 1 ? 's' : '',
+                $action_label
+            );
+        } else {
+            return sprintf(
+                '%d post%s %s successfully. %d error%s occurred.',
+                $success_count,
+                $success_count !== 1 ? 's' : '',
+                $action_label,
+                $error_count,
+                $error_count !== 1 ? 's' : ''
+            );
+        }
     }
 
     /**
@@ -293,14 +354,65 @@ class RestController
     public function export_data($request)
     {
         $format = $request->get_param('format');
-        $filters = SecurityManager::validate_filters($request->get_params());
+        $columns = $request->get_param('columns') ?: ['id', 'title', 'status', 'author', 'date'];
+        $filename = $request->get_param('filename') ?: 'posts_export_' . date('Y-m-d');
+
+        // Get all filter parameters
+        $filters = DataUtility::sanitize_filters($request->get_params());
+        $filters['per_page'] = -1; // Export all matching posts
 
         if (!in_array($format, ['csv', 'excel'])) {
             return new \WP_Error('invalid_format', 'Invalid export format', ['status' => 400]);
         }
 
-        // This will be implemented in the next phase
-        return new \WP_REST_Response(['message' => 'Export functionality coming soon'], 200);
+        try {
+            // Get posts data
+            $query_args = $this->build_query_args($filters);
+            $query = new \WP_Query($query_args);
+
+            if (!$query->have_posts()) {
+                return new \WP_Error('no_posts', 'No posts found to export', ['status' => 404]);
+            }
+
+            // Prepare export data
+            $export_data = [];
+            $headers = $this->get_export_headers($columns);
+            $export_data[] = $headers;
+
+            foreach ($query->posts as $post) {
+                $post_data = $this->prepare_post_data($post);
+                $row = [];
+
+                foreach ($columns as $column) {
+                    $row[] = $this->get_export_column_value($post_data, $column);
+                }
+
+                $export_data[] = $row;
+            }
+
+            // Generate file
+            $file_path = $this->generate_export_file($export_data, $format, $filename);
+
+            if (!$file_path) {
+                return new \WP_Error('export_failed', 'Failed to generate export file', ['status' => 500]);
+            }
+
+            // Return download URL
+            $upload_dir = wp_upload_dir();
+            $download_url = str_replace($upload_dir['basedir'], $upload_dir['baseurl'], $file_path);
+
+            return new \WP_REST_Response([
+                'success' => true,
+                'message' => sprintf('Successfully exported %d posts', count($export_data) - 1),
+                'download_url' => $download_url,
+                'filename' => basename($file_path),
+                'format' => $format,
+                'total_posts' => count($export_data) - 1
+            ], 200);
+
+        } catch (\Exception $e) {
+            return new \WP_Error('export_error', 'Export failed: ' . $e->getMessage(), ['status' => 500]);
+        }
     }
 
     /**
@@ -399,12 +511,20 @@ class RestController
             'action' => [
                 'required' => true,
                 'sanitize_callback' => 'sanitize_text_field',
+                'validate_callback' => function($param) {
+                    return in_array($param, ['publish', 'draft', 'private', 'trash', 'delete']);
+                },
             ],
             'post_ids' => [
                 'required' => true,
                 'validate_callback' => function($param) {
                     return is_array($param) && !empty($param);
                 },
+            ],
+            'confirm' => [
+                'type' => 'boolean',
+                'default' => false,
+                'sanitize_callback' => 'rest_sanitize_boolean',
             ],
         ];
     }
@@ -807,5 +927,201 @@ class RestController
         $suggestions = DataUtility::get_search_suggestions($query, $post_type, 5);
 
         return new \WP_REST_Response(['suggestions' => $suggestions], 200);
+    }
+
+    /**
+     * Get export arguments
+     *
+     * @return array
+     */
+    private function get_export_args()
+    {
+        return [
+            'format' => [
+                'required' => true,
+                'type' => 'string',
+                'enum' => ['csv', 'excel'],
+                'sanitize_callback' => 'sanitize_text_field',
+            ],
+            'columns' => [
+                'type' => 'array',
+                'items' => ['type' => 'string'],
+                'default' => ['id', 'title', 'status', 'author', 'date'],
+            ],
+            'filename' => [
+                'type' => 'string',
+                'sanitize_callback' => 'sanitize_file_name',
+            ],
+            // Include all filter parameters
+            'search' => [
+                'type' => 'string',
+                'sanitize_callback' => 'sanitize_text_field',
+            ],
+            'post_type' => [
+                'type' => 'string',
+                'default' => 'post',
+                'sanitize_callback' => 'sanitize_text_field',
+            ],
+            'author' => [
+                'type' => ['string', 'array'],
+                'sanitize_callback' => 'sanitize_text_field',
+            ],
+            'status' => [
+                'type' => ['string', 'array'],
+                'sanitize_callback' => 'sanitize_text_field',
+            ],
+            'category' => [
+                'type' => ['string', 'array'],
+                'sanitize_callback' => 'sanitize_text_field',
+            ],
+            'tag' => [
+                'type' => ['string', 'array'],
+                'sanitize_callback' => 'sanitize_text_field',
+            ],
+            'date_from' => [
+                'type' => 'string',
+                'format' => 'date',
+            ],
+            'date_to' => [
+                'type' => 'string',
+                'format' => 'date',
+            ],
+        ];
+    }
+
+    /**
+     * Get export headers
+     *
+     * @param array $columns
+     * @return array
+     */
+    private function get_export_headers($columns)
+    {
+        $headers_map = [
+            'id' => 'ID',
+            'title' => 'Title',
+            'content' => 'Content',
+            'excerpt' => 'Excerpt',
+            'status' => 'Status',
+            'author' => 'Author',
+            'date' => 'Date',
+            'modified' => 'Modified Date',
+            'categories' => 'Categories',
+            'tags' => 'Tags',
+            'featured_image' => 'Featured Image',
+            'post_type' => 'Post Type',
+            'comment_count' => 'Comment Count',
+        ];
+
+        return array_map(function($column) use ($headers_map) {
+            return $headers_map[$column] ?? ucfirst(str_replace('_', ' ', $column));
+        }, $columns);
+    }
+
+    /**
+     * Get export column value
+     *
+     * @param array $post_data
+     * @param string $column
+     * @return string
+     */
+    private function get_export_column_value($post_data, $column)
+    {
+        switch ($column) {
+            case 'id':
+                return $post_data['id'];
+            case 'title':
+                return $post_data['title'];
+            case 'content':
+                return wp_strip_all_tags($post_data['content'] ?? '');
+            case 'excerpt':
+                return wp_strip_all_tags($post_data['excerpt'] ?? '');
+            case 'status':
+                return $post_data['status_label'];
+            case 'author':
+                return $post_data['author'];
+            case 'date':
+                return $post_data['date_formatted'];
+            case 'modified':
+                return $post_data['modified_formatted'] ?? '';
+            case 'categories':
+                return is_array($post_data['categories']) ? implode(', ', array_column($post_data['categories'], 'name')) : '';
+            case 'tags':
+                return is_array($post_data['tags']) ? implode(', ', array_column($post_data['tags'], 'name')) : '';
+            case 'featured_image':
+                return $post_data['featured_image_url'] ?? '';
+            case 'post_type':
+                return $post_data['post_type'] ?? 'post';
+            case 'comment_count':
+                return $post_data['comment_count'] ?? '0';
+            default:
+                return $post_data[$column] ?? '';
+        }
+    }
+
+    /**
+     * Generate export file
+     *
+     * @param array $data
+     * @param string $format
+     * @param string $filename
+     * @return string|false
+     */
+    private function generate_export_file($data, $format, $filename)
+    {
+        $upload_dir = wp_upload_dir();
+        $export_dir = $upload_dir['basedir'] . '/uadt-exports';
+
+        // Create export directory if it doesn't exist
+        if (!file_exists($export_dir)) {
+            wp_mkdir_p($export_dir);
+        }
+
+        $file_extension = $format === 'excel' ? 'xlsx' : 'csv';
+        $file_path = $export_dir . '/' . $filename . '.' . $file_extension;
+
+        if ($format === 'csv') {
+            return $this->generate_csv_file($data, $file_path);
+        } else {
+            return $this->generate_excel_file($data, $file_path);
+        }
+    }
+
+    /**
+     * Generate CSV file
+     *
+     * @param array $data
+     * @param string $file_path
+     * @return string|false
+     */
+    private function generate_csv_file($data, $file_path)
+    {
+        $file = fopen($file_path, 'w');
+
+        if (!$file) {
+            return false;
+        }
+
+        foreach ($data as $row) {
+            fputcsv($file, $row);
+        }
+
+        fclose($file);
+        return $file_path;
+    }
+
+    /**
+     * Generate Excel file (simplified - creates CSV with .xlsx extension)
+     * For full Excel support, would need PhpSpreadsheet library
+     *
+     * @param array $data
+     * @param string $file_path
+     * @return string|false
+     */
+    private function generate_excel_file($data, $file_path)
+    {
+        // For now, generate CSV with Excel extension
+        // In production, you'd want to use PhpSpreadsheet for proper Excel files
+        return $this->generate_csv_file($data, $file_path);
     }
 }

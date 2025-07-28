@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Ultimate Ajax DataTable
  * Plugin URI: https://codecanyon.net/item/ultimate-ajax-datatable
- * Description: A practical WordPress plugin that enhances admin list tables with modern AJAX DataTable interface and powerful multiple filter options. Designed for broad hosting compatibility and real user needs.
+ * Description: Transform your WordPress posts management with a modern, lightning-fast data table interface. Features real-time search, advanced filtering, beautiful design, bulk actions, and seamless WordPress integration. Perfect for managing large numbers of posts with professional-grade performance and user experience.
  * Version: 1.0.0
  * Author: Your Name
  * Author URI: https://yourwebsite.com
@@ -14,6 +14,8 @@
  * Tested up to: 6.4
  * Requires PHP: 7.4
  * Network: false
+ * Tags: datatable, posts, admin, ajax, search, filter, bulk actions, performance, modern ui
+ * Donate link: https://yourwebsite.com/donate
  *
  * @package UltimateAjaxDataTable
  * @version 1.0.0

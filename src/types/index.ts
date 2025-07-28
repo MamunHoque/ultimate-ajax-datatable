@@ -2,16 +2,19 @@
 export interface FilterState {
   search: string;
   post_type: string;
-  author: string;
-  status: string;
-  category: string;
-  tag: string;
+  author: string | string[];
+  status: string | string[];
+  category: string | string[];
+  tag: string | string[];
   date_from: string;
   date_to: string;
+  date_preset: string;
+  custom_fields: Record<string, string>;
   page: number;
   per_page: number;
   orderby: string;
   order: 'ASC' | 'DESC';
+  selected_posts: number[];
 }
 
 // Post data interface
@@ -136,6 +139,55 @@ declare global {
       };
     };
   }
+}
+
+// Bulk action interface
+export interface BulkAction {
+  action: string;
+  post_ids: number[];
+  confirm?: boolean;
+}
+
+// Bulk action result
+export interface BulkActionResult {
+  success: boolean;
+  message: string;
+  summary: {
+    success_count: number;
+    error_count: number;
+    errors: Array<{
+      post_id: number;
+      error: string;
+    }>;
+  };
+}
+
+// Filter preset interface
+export interface FilterPreset {
+  id?: number;
+  name: string;
+  filters: Partial<FilterState>;
+  post_type: string;
+  is_default: boolean;
+  user_id?: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
+// Export options interface
+export interface ExportOptions {
+  format: 'csv' | 'excel';
+  filters: Partial<FilterState>;
+  columns: string[];
+  filename?: string;
+}
+
+// Date preset options
+export interface DatePreset {
+  label: string;
+  value: string;
+  date_from: string;
+  date_to: string;
 }
 
 // Export empty object to make this a module

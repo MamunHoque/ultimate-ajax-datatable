@@ -5,11 +5,25 @@ import { performBulkAction } from '../utils/api';
 interface BulkActionsProps {
   selectedPosts: number[];
   onSelectionChange: (posts: number[]) => void;
+  onSelectAll: () => void;
+  onSelectNone: () => void;
+  totalPosts: number;
+  isAllSelected: boolean;
   disabled?: boolean;
 }
 
-const BulkActions = ({ selectedPosts, onSelectionChange, disabled }: BulkActionsProps) => {
+const BulkActions = ({
+  selectedPosts,
+  onSelectionChange,
+  onSelectAll,
+  onSelectNone,
+  totalPosts,
+  isAllSelected,
+  disabled
+}: BulkActionsProps) => {
   const [action, setAction] = useState('');
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [confirmationAction, setConfirmationAction] = useState('');
   const queryClient = useQueryClient();
 
   const bulkMutation = useMutation({
