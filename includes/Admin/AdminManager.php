@@ -497,14 +497,7 @@ class AdminManager
         $auto_enhanced_mode = (bool) get_option('uadt_auto_enhanced_mode', false);
         $show_enhanced_notice = (bool) get_option('uadt_show_enhanced_notice', true);
 
-        // Debug logging (only for admin users)
-        if (current_user_can('manage_options') && defined('WP_DEBUG') && WP_DEBUG) {
-            error_log("UADT Debug - maybe_replace_posts_table:");
-            error_log("  - typenow: " . $typenow);
-            error_log("  - auto_enhanced_mode: " . ($auto_enhanced_mode ? 'true' : 'false'));
-            error_log("  - show_enhanced_notice: " . ($show_enhanced_notice ? 'true' : 'false'));
-            error_log("  - GET uadt_mode: " . (isset($_GET['uadt_mode']) ? $_GET['uadt_mode'] : 'not set'));
-        }
+
 
         // Check if user explicitly wants standard mode
         $force_standard_mode = isset($_GET['uadt_mode']) && $_GET['uadt_mode'] === 'standard';
@@ -522,11 +515,7 @@ class AdminManager
             }
         }
 
-        // Debug logging
-        if (current_user_can('manage_options') && defined('WP_DEBUG') && WP_DEBUG) {
-            error_log("  - force_standard_mode: " . ($force_standard_mode ? 'true' : 'false'));
-            error_log("  - should_show_enhanced: " . ($should_show_enhanced ? 'true' : 'false'));
-        }
+
 
         if ($should_show_enhanced) {
             // Show enhanced mode without any notices
@@ -581,10 +570,7 @@ class AdminManager
             return;
         }
 
-        // Debug logging
-        if (current_user_can('manage_options') && defined('WP_DEBUG') && WP_DEBUG) {
-            error_log("UADT Debug - maybe_hide_standard_table: HIDING STANDARD TABLE");
-        }
+
 
         // Hide the standard WordPress table elements early
         ?>
@@ -630,13 +616,7 @@ class AdminManager
         // Get plugin settings
         $auto_enhanced_mode = (bool) get_option('uadt_auto_enhanced_mode', false);
 
-        // Debug logging (only for admin users)
-        if (current_user_can('manage_options') && defined('WP_DEBUG') && WP_DEBUG) {
-            error_log("UADT Debug - add_posts_page_integration:");
-            error_log("  - typenow: " . $typenow);
-            error_log("  - auto_enhanced_mode: " . ($auto_enhanced_mode ? 'true' : 'false'));
-            error_log("  - GET uadt_mode: " . (isset($_GET['uadt_mode']) ? $_GET['uadt_mode'] : 'not set'));
-        }
+
 
         // Check if user explicitly wants standard mode
         $force_standard_mode = isset($_GET['uadt_mode']) && $_GET['uadt_mode'] === 'standard';
@@ -654,22 +634,9 @@ class AdminManager
             }
         }
 
-        // Debug logging
-        if (current_user_can('manage_options') && defined('WP_DEBUG') && WP_DEBUG) {
-            error_log("  - force_standard_mode: " . ($force_standard_mode ? 'true' : 'false'));
-            error_log("  - should_show_enhanced: " . ($should_show_enhanced ? 'true' : 'false'));
-        }
-
         // Only show enhanced mode if conditions are met
         if (!$should_show_enhanced) {
-            if (current_user_can('manage_options') && defined('WP_DEBUG') && WP_DEBUG) {
-                error_log("  - RETURNING EARLY - Enhanced mode not enabled");
-            }
             return;
-        }
-
-        if (current_user_can('manage_options') && defined('WP_DEBUG') && WP_DEBUG) {
-            error_log("  - LOADING ENHANCED INTERFACE");
         }
 
         ?>
