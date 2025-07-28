@@ -9,6 +9,7 @@
 namespace UltimateAjaxDataTable\API;
 
 use UltimateAjaxDataTable\Security\SecurityManager;
+use UltimateAjaxDataTable\API\DataUtility;
 
 // Prevent direct access
 if (!defined('ABSPATH')) {
@@ -67,6 +68,36 @@ class RestController
             'callback' => [$this, 'export_data'],
             'permission_callback' => [$this, 'check_permissions'],
         ]);
+
+        // Filter options endpoint
+        register_rest_route(self::NAMESPACE, '/filter-options', [
+            'methods' => 'GET',
+            'callback' => [$this, 'get_filter_options'],
+            'permission_callback' => [$this, 'check_permissions'],
+            'args' => [
+                'post_type' => [
+                    'default' => 'post',
+                    'sanitize_callback' => 'sanitize_text_field',
+                ]
+            ]
+        ]);
+
+        // Search suggestions endpoint
+        register_rest_route(self::NAMESPACE, '/search-suggestions', [
+            'methods' => 'GET',
+            'callback' => [$this, 'get_search_suggestions'],
+            'permission_callback' => [$this, 'check_permissions'],
+            'args' => [
+                'query' => [
+                    'required' => true,
+                    'sanitize_callback' => 'sanitize_text_field',
+                ],
+                'post_type' => [
+                    'default' => 'post',
+                    'sanitize_callback' => 'sanitize_text_field',
+                ]
+            ]
+        ]);
     }
 
     /**
@@ -111,30 +142,49 @@ class RestController
     public function get_posts($request)
     {
         try {
+            $start_time = microtime(true);
+
             $params = $request->get_params();
-            $filters = SecurityManager::validate_filters($params);
+            $filters = DataUtility::sanitize_filters($params);
 
-            // Build query args
-            $query_args = $this->build_query_args($filters);
+            // Generate cache key
+            $cache_key = 'posts_' . DataUtility::generate_cache_key($filters);
 
-            // Execute query
-            $query = new \WP_Query($query_args);
+            // Try to get cached results
+            $cached_result = DataUtility::get_cached($cache_key, function() use ($filters) {
+                // Build query args
+                $query_args = $this->build_query_args($filters);
+                $query_args = DataUtility::optimize_query_args($query_args);
 
-            // Prepare response data
-            $posts = [];
-            foreach ($query->posts as $post) {
-                $posts[] = $this->prepare_post_data($post);
+                // Execute query
+                $query = new \WP_Query($query_args);
+
+                // Prepare response data
+                $posts = [];
+                foreach ($query->posts as $post) {
+                    $posts[] = $this->prepare_post_data($post);
+                }
+
+                return [
+                    'posts' => $posts,
+                    'total' => $query->found_posts,
+                    'pages' => $query->max_num_pages,
+                    'current_page' => $query_args['paged'],
+                    'per_page' => $query_args['posts_per_page'],
+                    'query_time' => 0 // Will be updated below
+                ];
+            }, 300); // Cache for 5 minutes
+
+            $execution_time = microtime(true) - $start_time;
+            $cached_result['query_time'] = round($execution_time, 3);
+            $cached_result['cached'] = true;
+
+            // Log slow queries
+            if ($execution_time > 0.5) {
+                DataUtility::log_slow_query('get_posts', $execution_time);
             }
 
-            $response_data = [
-                'posts' => $posts,
-                'total' => $query->found_posts,
-                'pages' => $query->max_num_pages,
-                'current_page' => $query_args['paged'],
-                'per_page' => $query_args['posts_per_page']
-            ];
-
-            return new \WP_REST_Response($response_data, 200);
+            return new \WP_REST_Response($cached_result, 200);
 
         } catch (\Exception $e) {
             SecurityManager::log_security_event('api_error', ['error' => $e->getMessage()]);
@@ -228,10 +278,16 @@ class RestController
             'page' => [
                 'default' => 1,
                 'sanitize_callback' => 'absint',
+                'validate_callback' => function($param) {
+                    return is_numeric($param) && $param > 0;
+                }
             ],
             'per_page' => [
                 'default' => 25,
                 'sanitize_callback' => 'absint',
+                'validate_callback' => function($param) {
+                    return is_numeric($param) && $param > 0 && $param <= 100;
+                }
             ],
             'search' => [
                 'default' => '',
@@ -240,6 +296,9 @@ class RestController
             'post_type' => [
                 'default' => 'post',
                 'sanitize_callback' => 'sanitize_text_field',
+                'validate_callback' => function($param) {
+                    return post_type_exists($param);
+                }
             ],
             'author' => [
                 'default' => '',
@@ -248,14 +307,47 @@ class RestController
             'status' => [
                 'default' => 'publish',
                 'sanitize_callback' => 'sanitize_text_field',
+                'validate_callback' => function($param) {
+                    $valid_statuses = ['publish', 'draft', 'private', 'pending', 'trash', 'any'];
+                    return in_array($param, $valid_statuses);
+                }
             ],
             'date_from' => [
                 'default' => '',
                 'sanitize_callback' => 'sanitize_text_field',
+                'validate_callback' => function($param) {
+                    return empty($param) || $this->validate_date($param);
+                }
             ],
             'date_to' => [
                 'default' => '',
                 'sanitize_callback' => 'sanitize_text_field',
+                'validate_callback' => function($param) {
+                    return empty($param) || $this->validate_date($param);
+                }
+            ],
+            'category' => [
+                'default' => '',
+                'sanitize_callback' => 'sanitize_text_field',
+            ],
+            'tag' => [
+                'default' => '',
+                'sanitize_callback' => 'sanitize_text_field',
+            ],
+            'orderby' => [
+                'default' => 'date',
+                'sanitize_callback' => 'sanitize_text_field',
+                'validate_callback' => function($param) {
+                    $valid_orderby = ['date', 'title', 'author', 'modified', 'menu_order', 'ID'];
+                    return in_array($param, $valid_orderby);
+                }
+            ],
+            'order' => [
+                'default' => 'DESC',
+                'sanitize_callback' => 'sanitize_text_field',
+                'validate_callback' => function($param) {
+                    return in_array(strtoupper($param), ['ASC', 'DESC']);
+                }
             ],
         ];
     }
@@ -294,36 +386,95 @@ class RestController
             'post_status' => $filters['status'] ?? 'publish',
             'posts_per_page' => min($filters['per_page'] ?? 25, 100),
             'paged' => $filters['page'] ?? 1,
-            'orderby' => 'date',
-            'order' => 'DESC'
+            'orderby' => $filters['orderby'] ?? 'date',
+            'order' => strtoupper($filters['order'] ?? 'DESC'),
+            'no_found_rows' => false, // We need total count for pagination
+            'update_post_meta_cache' => false, // Optimize performance
+            'update_post_term_cache' => true, // We need terms for display
         ];
 
-        // Add search
+        // Add search with enhanced functionality
         if (!empty($filters['search'])) {
-            $args['s'] = $filters['search'];
+            $search_term = $filters['search'];
+
+            // If search contains quotes, search for exact phrase
+            if (preg_match('/^"(.+)"$/', $search_term, $matches)) {
+                $args['exact'] = true;
+                $args['s'] = $matches[1];
+            } else {
+                $args['s'] = $search_term;
+                // Add meta query for custom field search
+                $args['meta_query'] = [
+                    'relation' => 'OR',
+                    [
+                        'key' => '_custom_field_search',
+                        'value' => $search_term,
+                        'compare' => 'LIKE'
+                    ]
+                ];
+            }
         }
 
-        // Add author filter
+        // Add author filter (support both ID and name)
         if (!empty($filters['author'])) {
-            $args['author'] = $filters['author'];
+            if (is_numeric($filters['author'])) {
+                $args['author'] = $filters['author'];
+            } else {
+                $args['author_name'] = $filters['author'];
+            }
         }
 
-        // Add date filters
+        // Add taxonomy filters
+        $tax_query = [];
+
+        // Category filter
+        if (!empty($filters['category'])) {
+            $categories = explode(',', $filters['category']);
+            $tax_query[] = [
+                'taxonomy' => 'category',
+                'field' => is_numeric($categories[0]) ? 'term_id' : 'slug',
+                'terms' => $categories,
+                'operator' => 'IN'
+            ];
+        }
+
+        // Tag filter
+        if (!empty($filters['tag'])) {
+            $tags = explode(',', $filters['tag']);
+            $tax_query[] = [
+                'taxonomy' => 'post_tag',
+                'field' => is_numeric($tags[0]) ? 'term_id' : 'slug',
+                'terms' => $tags,
+                'operator' => 'IN'
+            ];
+        }
+
+        if (!empty($tax_query)) {
+            $args['tax_query'] = $tax_query;
+        }
+
+        // Add date filters with enhanced functionality
         if (!empty($filters['date_from']) || !empty($filters['date_to'])) {
             $date_query = [];
-            
+
             if (!empty($filters['date_from'])) {
                 $date_query['after'] = $filters['date_from'];
+                $date_query['inclusive'] = true;
             }
-            
+
             if (!empty($filters['date_to'])) {
-                $date_query['before'] = $filters['date_to'];
+                $date_query['before'] = $filters['date_to'] . ' 23:59:59';
+                $date_query['inclusive'] = true;
             }
-            
+
             $args['date_query'] = [$date_query];
         }
 
-        return $args;
+        // Add caching for better performance
+        $args['cache_results'] = true;
+        $args['suppress_filters'] = false; // Allow other plugins to modify
+
+        return apply_filters('uadt_query_args', $args, $filters);
     }
 
     /**
@@ -334,17 +485,61 @@ class RestController
      */
     private function prepare_post_data($post)
     {
+        // Get post type object for labels
+        $post_type_obj = get_post_type_object($post->post_type);
+
+        // Get categories and tags
+        $categories = get_the_category($post->ID);
+        $tags = get_the_tags($post->ID);
+
+        // Get featured image
+        $featured_image = '';
+        if (has_post_thumbnail($post->ID)) {
+            $featured_image = get_the_post_thumbnail_url($post->ID, 'thumbnail');
+        }
+
+        // Get excerpt
+        $excerpt = '';
+        if (!empty($post->post_excerpt)) {
+            $excerpt = $post->post_excerpt;
+        } else {
+            $excerpt = wp_trim_words(strip_tags($post->post_content), 20);
+        }
+
         return [
             'id' => $post->ID,
-            'title' => get_the_title($post),
+            'title' => get_the_title($post) ?: __('(No title)', 'ultimate-ajax-datatable'),
+            'slug' => $post->post_name,
             'status' => $post->post_status,
+            'status_label' => $this->get_status_label($post->post_status),
             'author' => get_the_author_meta('display_name', $post->post_author),
             'author_id' => $post->post_author,
             'date' => get_the_date('Y-m-d H:i:s', $post),
+            'date_formatted' => get_the_date('M j, Y', $post),
             'modified' => get_the_modified_date('Y-m-d H:i:s', $post),
+            'modified_formatted' => get_the_modified_date('M j, Y', $post),
             'post_type' => $post->post_type,
-            'edit_link' => get_edit_post_link($post->ID),
+            'post_type_label' => $post_type_obj ? $post_type_obj->labels->singular_name : $post->post_type,
+            'excerpt' => $excerpt,
+            'featured_image' => $featured_image,
+            'categories' => array_map(function($cat) {
+                return [
+                    'id' => $cat->term_id,
+                    'name' => $cat->name,
+                    'slug' => $cat->slug
+                ];
+            }, $categories ?: []),
+            'tags' => array_map(function($tag) {
+                return [
+                    'id' => $tag->term_id,
+                    'name' => $tag->name,
+                    'slug' => $tag->slug
+                ];
+            }, $tags ?: []),
+            'edit_link' => current_user_can('edit_post', $post->ID) ? get_edit_post_link($post->ID) : '',
             'view_link' => get_permalink($post->ID),
+            'can_edit' => current_user_can('edit_post', $post->ID),
+            'can_delete' => current_user_can('delete_post', $post->ID),
         ];
     }
 
@@ -409,5 +604,185 @@ class RestController
     {
         // This will be implemented when we add preset functionality
         return new \WP_REST_Response(['message' => 'Preset saved'], 200);
+    }
+
+    /**
+     * Validate date format
+     *
+     * @param string $date
+     * @return bool
+     */
+    private function validate_date($date)
+    {
+        $formats = ['Y-m-d', 'Y-m-d H:i:s', 'm/d/Y', 'd/m/Y'];
+
+        foreach ($formats as $format) {
+            $d = \DateTime::createFromFormat($format, $date);
+            if ($d && $d->format($format) === $date) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Get human-readable status label
+     *
+     * @param string $status
+     * @return string
+     */
+    private function get_status_label($status)
+    {
+        $labels = [
+            'publish' => __('Published', 'ultimate-ajax-datatable'),
+            'draft' => __('Draft', 'ultimate-ajax-datatable'),
+            'private' => __('Private', 'ultimate-ajax-datatable'),
+            'pending' => __('Pending Review', 'ultimate-ajax-datatable'),
+            'trash' => __('Trash', 'ultimate-ajax-datatable'),
+            'auto-draft' => __('Auto Draft', 'ultimate-ajax-datatable'),
+            'inherit' => __('Revision', 'ultimate-ajax-datatable'),
+        ];
+
+        return $labels[$status] ?? ucfirst($status);
+    }
+
+    /**
+     * Get filter options for dropdowns
+     *
+     * @param \WP_REST_Request $request
+     * @return \WP_REST_Response
+     */
+    public function get_filter_options($request)
+    {
+        $post_type = $request->get_param('post_type') ?: 'post';
+
+        if (!post_type_exists($post_type)) {
+            return new \WP_Error('invalid_post_type', 'Invalid post type', ['status' => 400]);
+        }
+
+        $options = [
+            'authors' => $this->get_authors_for_post_type($post_type),
+            'statuses' => $this->get_post_statuses(),
+            'categories' => $this->get_categories_for_post_type($post_type),
+            'tags' => $this->get_tags_for_post_type($post_type),
+        ];
+
+        return new \WP_REST_Response($options, 200);
+    }
+
+    /**
+     * Get authors who have posts of the specified type
+     *
+     * @param string $post_type
+     * @return array
+     */
+    private function get_authors_for_post_type($post_type)
+    {
+        global $wpdb;
+
+        $authors = $wpdb->get_results($wpdb->prepare("
+            SELECT DISTINCT u.ID, u.display_name, u.user_login
+            FROM {$wpdb->users} u
+            INNER JOIN {$wpdb->posts} p ON u.ID = p.post_author
+            WHERE p.post_type = %s AND p.post_status != 'trash'
+            ORDER BY u.display_name
+        ", $post_type));
+
+        return array_map(function($author) {
+            return [
+                'id' => $author->ID,
+                'name' => $author->display_name,
+                'login' => $author->user_login
+            ];
+        }, $authors);
+    }
+
+    /**
+     * Get available post statuses
+     *
+     * @return array
+     */
+    private function get_post_statuses()
+    {
+        $statuses = get_post_stati(['show_in_admin_status_list' => true], 'objects');
+
+        $result = [];
+        foreach ($statuses as $status => $obj) {
+            $result[] = [
+                'value' => $status,
+                'label' => $obj->label
+            ];
+        }
+
+        return $result;
+    }
+
+    /**
+     * Get categories for post type
+     *
+     * @param string $post_type
+     * @return array
+     */
+    private function get_categories_for_post_type($post_type)
+    {
+        if ($post_type !== 'post') {
+            return [];
+        }
+
+        $categories = get_categories(['hide_empty' => false, 'number' => 100]);
+
+        return array_map(function($cat) {
+            return [
+                'id' => $cat->term_id,
+                'name' => $cat->name,
+                'slug' => $cat->slug,
+                'count' => $cat->count
+            ];
+        }, $categories);
+    }
+
+    /**
+     * Get tags for post type
+     *
+     * @param string $post_type
+     * @return array
+     */
+    private function get_tags_for_post_type($post_type)
+    {
+        if ($post_type !== 'post') {
+            return [];
+        }
+
+        $tags = get_tags(['hide_empty' => false, 'number' => 100]);
+
+        return array_map(function($tag) {
+            return [
+                'id' => $tag->term_id,
+                'name' => $tag->name,
+                'slug' => $tag->slug,
+                'count' => $tag->count
+            ];
+        }, $tags);
+    }
+
+    /**
+     * Get search suggestions
+     *
+     * @param \WP_REST_Request $request
+     * @return \WP_REST_Response
+     */
+    public function get_search_suggestions($request)
+    {
+        $query = $request->get_param('query');
+        $post_type = $request->get_param('post_type');
+
+        if (strlen($query) < 2) {
+            return new \WP_REST_Response(['suggestions' => []], 200);
+        }
+
+        $suggestions = DataUtility::get_search_suggestions($query, $post_type, 5);
+
+        return new \WP_REST_Response(['suggestions' => $suggestions], 200);
     }
 }
