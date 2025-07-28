@@ -1968,8 +1968,21 @@ class AdminManager
         $show_enhanced_notice = isset($_POST['uadt_show_enhanced_notice']) ? 1 : 0;
         $auto_enhanced_mode = isset($_POST['uadt_auto_enhanced_mode']) ? 1 : 0;
 
+        // Debug: Add admin notice to see what's being saved
+        add_action('admin_notices', function() use ($show_enhanced_notice, $auto_enhanced_mode) {
+            echo '<div class="notice notice-info"><p>DEBUG SAVE: show_enhanced_notice = ' . $show_enhanced_notice . ', auto_enhanced_mode = ' . $auto_enhanced_mode . '</p></div>';
+            echo '<div class="notice notice-info"><p>DEBUG POST: ' . print_r($_POST, true) . '</p></div>';
+        });
+
         update_option('uadt_show_enhanced_notice', $show_enhanced_notice);
         update_option('uadt_auto_enhanced_mode', $auto_enhanced_mode);
+
+        // Debug: Verify what was actually saved
+        $saved_notice = get_option('uadt_show_enhanced_notice');
+        $saved_auto = get_option('uadt_auto_enhanced_mode');
+        add_action('admin_notices', function() use ($saved_notice, $saved_auto) {
+            echo '<div class="notice notice-success"><p>DEBUG SAVED: show_enhanced_notice = ' . $saved_notice . ', auto_enhanced_mode = ' . $saved_auto . '</p></div>';
+        });
     }
 
     /**
