@@ -492,14 +492,39 @@ class AdminManager
             return;
         }
 
-        // Check if user wants to use our data table (add a URL parameter to toggle)
-        if (isset($_GET['uadt_mode']) && $_GET['uadt_mode'] === 'enhanced') {
-            // Add our enhanced mode
-            add_action('admin_notices', [$this, 'show_enhanced_mode_notice']);
-        } else {
-            // Add option to switch to enhanced mode
+        // Get plugin settings
+        $auto_enhanced_mode = get_option('uadt_auto_enhanced_mode', false);
+        $show_enhanced_notice = get_option('uadt_show_enhanced_notice', true);
+
+        // Check if user explicitly wants standard mode
+        $force_standard_mode = isset($_GET['uadt_mode']) && $_GET['uadt_mode'] === 'standard';
+
+        // Determine if we should show enhanced mode
+        $should_show_enhanced = false;
+
+        if (!$force_standard_mode) {
+            if ($auto_enhanced_mode) {
+                // Auto enhanced mode is enabled - show enhanced interface unless explicitly overridden
+                $should_show_enhanced = true;
+            } elseif (isset($_GET['uadt_mode']) && $_GET['uadt_mode'] === 'enhanced') {
+                // Manual enhanced mode via URL parameter
+                $should_show_enhanced = true;
+            }
+        }
+
+        if ($should_show_enhanced) {
+            // Show enhanced mode without any notices
+            // The enhanced interface will be loaded by add_posts_page_integration()
+            return;
+        }
+
+        // If auto enhanced mode is disabled and no manual request, show standard WordPress interface
+        // Only show the "Try Enhanced View" notice if the setting allows it
+        if (!$auto_enhanced_mode && $show_enhanced_notice) {
             add_action('admin_notices', [$this, 'show_enhanced_mode_option']);
         }
+
+        // If show_enhanced_notice is disabled, show nothing - just standard WordPress interface
     }
 
     /**
@@ -516,8 +541,27 @@ class AdminManager
             return;
         }
 
-        // Only show enhanced mode if requested
-        if (!isset($_GET['uadt_mode']) || $_GET['uadt_mode'] !== 'enhanced') {
+        // Get plugin settings
+        $auto_enhanced_mode = get_option('uadt_auto_enhanced_mode', false);
+
+        // Check if user explicitly wants standard mode
+        $force_standard_mode = isset($_GET['uadt_mode']) && $_GET['uadt_mode'] === 'standard';
+
+        // Determine if we should show enhanced mode
+        $should_show_enhanced = false;
+
+        if (!$force_standard_mode) {
+            if ($auto_enhanced_mode) {
+                // Auto enhanced mode is enabled - show enhanced interface unless explicitly overridden
+                $should_show_enhanced = true;
+            } elseif (isset($_GET['uadt_mode']) && $_GET['uadt_mode'] === 'enhanced') {
+                // Manual enhanced mode via URL parameter
+                $should_show_enhanced = true;
+            }
+        }
+
+        // Only show enhanced mode if conditions are met
+        if (!$should_show_enhanced) {
             return;
         }
 
@@ -1027,7 +1071,7 @@ class AdminManager
                             }, 'Add New Post')
                         ),
                         React.createElement('a', {
-                            href: window.location.pathname + window.location.search.replace(/[?&]uadt_mode=enhanced/, ''),
+                            href: window.location.pathname + window.location.search.replace(/[?&]uadt_mode=enhanced/, '') + (window.location.search.includes('?') ? '&' : '?') + 'uadt_mode=standard',
                             className: 'button button-secondary',
                             style: { textDecoration: 'none' }
                         }, '← Standard View')
@@ -1664,26 +1708,29 @@ class AdminManager
 
             <table class="form-table">
                 <tr>
-                    <th scope="row"><?php esc_html_e('Enhanced Mode Notice', 'ultimate-ajax-datatable'); ?></th>
-                    <td>
-                        <label>
-                            <input type="checkbox" name="uadt_show_enhanced_notice" value="1" <?php checked($settings['show_enhanced_notice']); ?>>
-                            <?php esc_html_e('Show "Try Enhanced View" notice', 'ultimate-ajax-datatable'); ?>
-                        </label>
-                        <p class="uadt-help-text"><?php esc_html_e('Display a notice on standard post pages offering to switch to enhanced mode.', 'ultimate-ajax-datatable'); ?></p>
-                    </td>
-                </tr>
-                <tr>
-                    <th scope="row"><?php esc_html_e('Auto Enhanced Mode', 'ultimate-ajax-datatable'); ?></th>
+                    <th scope="row"><?php esc_html_e('Enhanced Mode Behavior', 'ultimate-ajax-datatable'); ?></th>
                     <td>
                         <label>
                             <input type="checkbox" name="uadt_auto_enhanced_mode" value="1" <?php checked($settings['auto_enhanced_mode']); ?>>
                             <?php esc_html_e('Automatically use enhanced mode', 'ultimate-ajax-datatable'); ?>
                         </label>
-                        <p class="uadt-help-text"><?php esc_html_e('Automatically redirect to enhanced mode for enabled post types.', 'ultimate-ajax-datatable'); ?></p>
-                        <div class="uadt-warning">
-                            <strong><?php esc_html_e('Warning:', 'ultimate-ajax-datatable'); ?></strong>
-                            <?php esc_html_e('This will replace the standard WordPress posts page entirely. Users will not see the standard interface.', 'ultimate-ajax-datatable'); ?>
+                        <p class="uadt-help-text"><?php esc_html_e('When enabled, the enhanced data table will automatically replace the standard WordPress posts page for enabled post types. Users can still access standard view via the "← Standard View" link.', 'ultimate-ajax-datatable'); ?></p>
+
+                        <div style="margin-top: 15px;">
+                            <label>
+                                <input type="checkbox" name="uadt_show_enhanced_notice" value="1" <?php checked($settings['show_enhanced_notice']); ?> <?php echo $settings['auto_enhanced_mode'] ? 'disabled' : ''; ?>>
+                                <?php esc_html_e('Show "Try Enhanced View" notice (when auto mode is disabled)', 'ultimate-ajax-datatable'); ?>
+                            </label>
+                            <p class="uadt-help-text"><?php esc_html_e('Display a notice on standard post pages offering to switch to enhanced mode. This option is ignored when auto enhanced mode is enabled.', 'ultimate-ajax-datatable'); ?></p>
+                        </div>
+
+                        <div class="uadt-info" style="margin-top: 15px;">
+                            <strong><?php esc_html_e('Behavior Summary:', 'ultimate-ajax-datatable'); ?></strong>
+                            <ul style="margin: 10px 0 0 20px;">
+                                <li><strong><?php esc_html_e('Auto Enhanced Mode ON:', 'ultimate-ajax-datatable'); ?></strong> <?php esc_html_e('Enhanced interface loads automatically, no notices shown', 'ultimate-ajax-datatable'); ?></li>
+                                <li><strong><?php esc_html_e('Auto Enhanced Mode OFF + Notice ON:', 'ultimate-ajax-datatable'); ?></strong> <?php esc_html_e('Standard interface with "Try Enhanced View" notice', 'ultimate-ajax-datatable'); ?></li>
+                                <li><strong><?php esc_html_e('Auto Enhanced Mode OFF + Notice OFF:', 'ultimate-ajax-datatable'); ?></strong> <?php esc_html_e('Standard WordPress interface only, no enhanced features visible', 'ultimate-ajax-datatable'); ?></li>
+                            </ul>
                         </div>
                     </td>
                 </tr>
@@ -1719,6 +1766,30 @@ class AdminManager
                 form.submit();
             }
         }
+
+        // Handle auto enhanced mode checkbox interaction
+        document.addEventListener('DOMContentLoaded', function() {
+            var autoModeCheckbox = document.querySelector('input[name="uadt_auto_enhanced_mode"]');
+            var noticeCheckbox = document.querySelector('input[name="uadt_show_enhanced_notice"]');
+
+            if (autoModeCheckbox && noticeCheckbox) {
+                function toggleNoticeCheckbox() {
+                    if (autoModeCheckbox.checked) {
+                        noticeCheckbox.disabled = true;
+                        noticeCheckbox.closest('label').style.opacity = '0.5';
+                    } else {
+                        noticeCheckbox.disabled = false;
+                        noticeCheckbox.closest('label').style.opacity = '1';
+                    }
+                }
+
+                // Initial state
+                toggleNoticeCheckbox();
+
+                // Listen for changes
+                autoModeCheckbox.addEventListener('change', toggleNoticeCheckbox);
+            }
+        });
         </script>
         <?php
     }
