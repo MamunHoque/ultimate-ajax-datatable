@@ -702,6 +702,59 @@ class AdminManager
             color: #0073aa;
             font-weight: 500;
         }
+
+        .uadt-top-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 0 4px;
+        }
+
+        .uadt-title-section {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .uadt-page-title {
+            font-size: 23px;
+            font-weight: 400;
+            margin: 0;
+            color: #1d2327;
+            line-height: 1.3;
+        }
+
+        .uadt-add-new-button {
+            display: inline-block;
+            padding: 4px 8px;
+            font-size: 13px;
+            line-height: 2.15384615;
+            text-align: center;
+            color: #2271b1;
+            border: 1px solid #2271b1;
+            border-radius: 3px;
+            background: #f6f7f7;
+            font-weight: 400;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .uadt-add-new-button:hover {
+            background: #2271b1;
+            color: #fff;
+            border-color: #135e96;
+        }
+
+        .uadt-enhanced-badge {
+            font-size: 12px;
+            color: #646970;
+            background: rgba(0,115,170,.1);
+            padding: 4px 8px;
+            border-radius: 3px;
+            font-weight: 500;
+        }
         </style>
 
         <script type="text/javascript">
@@ -712,11 +765,8 @@ class AdminManager
             $('.search-box').hide();
             $('.subsubsub').hide();
 
-            // Keep the "Add New" button visible and properly positioned
-            $('.page-title-action').show().css({
-                'margin-left': '8px',
-                'vertical-align': 'top'
-            });
+            // Hide the original Add New button temporarily
+            $('.page-title-action').hide();
 
             // Add our enhanced data table container
             $('.wrap h1').after('<div id="uadt-posts-integration"></div>');
@@ -780,7 +830,23 @@ class AdminManager
                 };
 
                 return React.createElement('div', { className: 'uadt-posts-page-app' },
-                    // Header with search
+                    // Top Header with Title and Add New Button
+                    React.createElement('div', { className: 'uadt-top-header' },
+                        React.createElement('div', { className: 'uadt-title-section' },
+                            React.createElement('h1', { className: 'uadt-page-title' }, 'Posts'),
+                            React.createElement('a', {
+                                href: 'post-new.php',
+                                className: 'uadt-add-new-button'
+                            }, 'Add New Post')
+                        ),
+                        React.createElement('a', {
+                            href: window.location.pathname + window.location.search.replace(/[?&]uadt_mode=enhanced/, ''),
+                            className: 'button button-secondary',
+                            style: { textDecoration: 'none' }
+                        }, '← Standard View')
+                    ),
+
+                    // Enhanced Header with search
                     React.createElement('div', { className: 'uadt-posts-header' },
                         React.createElement('h2', { className: 'uadt-header-title' }, 'Enhanced Posts Manager'),
                         React.createElement('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' } },
@@ -804,11 +870,9 @@ class AdminManager
                                     )
                                 )
                             ),
-                            React.createElement('a', {
-                                href: window.location.pathname + window.location.search.replace(/[?&]uadt_mode=enhanced/, ''),
-                                className: 'button button-secondary',
-                                style: { textDecoration: 'none' }
-                            }, '← Standard View')
+                            React.createElement('div', { style: { display: 'flex', gap: '8px', alignItems: 'center' } },
+                                React.createElement('span', { className: 'uadt-enhanced-badge' }, '⚡ Enhanced Mode')
+                            )
                         )
                     ),
 
