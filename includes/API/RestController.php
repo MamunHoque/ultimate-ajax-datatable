@@ -147,37 +147,31 @@ class RestController
             $params = $request->get_params();
             $filters = DataUtility::sanitize_filters($params);
 
+            // Debug logging
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('UADT API Request - Params: ' . print_r($params, true));
+                error_log('UADT API Request - Filters: ' . print_r($filters, true));
+            }
+
             // Generate cache key
             $cache_key = 'posts_' . DataUtility::generate_cache_key($filters);
 
-            // Try to get cached results
-            $cached_result = DataUtility::get_cached($cache_key, function() use ($filters) {
-                // Build query args
-                $query_args = $this->build_query_args($filters);
-                $query_args = DataUtility::optimize_query_args($query_args);
+            // Disable caching for search queries to ensure fresh results
+            $use_cache = empty($filters['search']);
 
-                // Execute query
-                $query = new \WP_Query($query_args);
-
-                // Prepare response data
-                $posts = [];
-                foreach ($query->posts as $post) {
-                    $posts[] = $this->prepare_post_data($post);
-                }
-
-                return [
-                    'posts' => $posts,
-                    'total' => $query->found_posts,
-                    'pages' => $query->max_num_pages,
-                    'current_page' => $query_args['paged'],
-                    'per_page' => $query_args['posts_per_page'],
-                    'query_time' => 0 // Will be updated below
-                ];
-            }, 300); // Cache for 5 minutes
+            if ($use_cache) {
+                // Try to get cached results
+                $cached_result = DataUtility::get_cached($cache_key, function() use ($filters) {
+                    return $this->execute_posts_query($filters);
+                }, 300); // Cache for 5 minutes
+            } else {
+                // Execute query directly without caching
+                $cached_result = $this->execute_posts_query($filters);
+            }
 
             $execution_time = microtime(true) - $start_time;
             $cached_result['query_time'] = round($execution_time, 3);
-            $cached_result['cached'] = true;
+            $cached_result['cached'] = $use_cache;
 
             // Log slow queries
             if ($execution_time > 0.5) {
@@ -190,6 +184,48 @@ class RestController
             SecurityManager::log_security_event('api_error', ['error' => $e->getMessage()]);
             return new \WP_Error('api_error', 'An error occurred while fetching posts', ['status' => 500]);
         }
+    }
+
+    /**
+     * Execute posts query
+     *
+     * @param array $filters
+     * @return array
+     */
+    private function execute_posts_query($filters)
+    {
+        // Build query args
+        $query_args = $this->build_query_args($filters);
+        $query_args = DataUtility::optimize_query_args($query_args);
+
+        // Debug logging
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('UADT Query Args: ' . print_r($query_args, true));
+        }
+
+        // Execute query
+        $query = new \WP_Query($query_args);
+
+        // Debug logging
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('UADT Query Results: Found ' . $query->found_posts . ' posts');
+            error_log('UADT Query SQL: ' . $query->request);
+        }
+
+        // Prepare response data
+        $posts = [];
+        foreach ($query->posts as $post) {
+            $posts[] = $this->prepare_post_data($post);
+        }
+
+        return [
+            'posts' => $posts,
+            'total' => $query->found_posts,
+            'pages' => $query->max_num_pages,
+            'current_page' => $query_args['paged'],
+            'per_page' => $query_args['posts_per_page'],
+            'query_time' => 0 // Will be updated by caller
+        ];
     }
 
     /**
@@ -383,7 +419,7 @@ class RestController
     {
         $args = [
             'post_type' => $filters['post_type'] ?? 'post',
-            'post_status' => $filters['status'] ?? 'publish',
+            'post_status' => !empty($filters['status']) ? $filters['status'] : ['publish', 'draft', 'private'],
             'posts_per_page' => min($filters['per_page'] ?? 25, 100),
             'paged' => $filters['page'] ?? 1,
             'orderby' => $filters['orderby'] ?? 'date',
@@ -393,25 +429,12 @@ class RestController
             'update_post_term_cache' => true, // We need terms for display
         ];
 
-        // Add search with enhanced functionality
+        // Add search functionality
         if (!empty($filters['search'])) {
-            $search_term = $filters['search'];
+            $search_term = trim($filters['search']);
 
-            // If search contains quotes, search for exact phrase
-            if (preg_match('/^"(.+)"$/', $search_term, $matches)) {
-                $args['exact'] = true;
-                $args['s'] = $matches[1];
-            } else {
+            if (!empty($search_term)) {
                 $args['s'] = $search_term;
-                // Add meta query for custom field search
-                $args['meta_query'] = [
-                    'relation' => 'OR',
-                    [
-                        'key' => '_custom_field_search',
-                        'value' => $search_term,
-                        'compare' => 'LIKE'
-                    ]
-                ];
             }
         }
 

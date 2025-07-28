@@ -712,6 +712,12 @@ class AdminManager
             $('.search-box').hide();
             $('.subsubsub').hide();
 
+            // Keep the "Add New" button visible and properly positioned
+            $('.page-title-action').show().css({
+                'margin-left': '8px',
+                'vertical-align': 'top'
+            });
+
             // Add our enhanced data table container
             $('.wrap h1').after('<div id="uadt-posts-integration"></div>');
 
