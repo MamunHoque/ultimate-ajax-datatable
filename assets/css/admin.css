@@ -1,0 +1,110 @@
+/**
+ * Ultimate Ajax DataTable - Admin Styles
+ *
+ * @package UltimateAjaxDataTable
+ * @since 1.0.0
+ */
+
+/* Admin Page Styles */
+.uadt-admin-page {
+    margin: 20px 0;
+}
+
+.uadt-admin-page h1 {
+    margin-bottom: 20px;
+}
+
+/* React App Container */
+#uadt-admin-app {
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    border-radius: 4px;
+    padding: 20px;
+    min-height: 600px;
+}
+
+/* Loading States */
+.uadt-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 200px;
+    font-size: 16px;
+    color: #666;
+}
+
+.uadt-loading::before {
+    content: '';
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 2px solid #ccc;
+    border-top-color: #0073aa;
+    border-radius: 50%;
+    animation: uadt-spin 1s linear infinite;
+    margin-right: 10px;
+}
+
+@keyframes uadt-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Error States */
+.uadt-error {
+    background: #fff;
+    border-left: 4px solid #dc3232;
+    padding: 12px;
+    margin: 20px 0;
+    color: #444;
+}
+
+/* Success States */
+.uadt-success {
+    background: #fff;
+    border-left: 4px solid #46b450;
+    padding: 12px;
+    margin: 20px 0;
+    color: #444;
+}
+
+/* Settings Page Styles */
+.uadt-settings-page .form-table th {
+    width: 200px;
+    padding: 20px 10px 20px 0;
+}
+
+.uadt-settings-page .form-table td {
+    padding: 15px 10px;
+}
+
+.uadt-settings-page .form-table input[type="checkbox"] {
+    margin-right: 8px;
+}
+
+.uadt-settings-page .form-table label {
+    display: block;
+    margin-bottom: 5px;
+}
+
+/* Responsive Design */
+@media (max-width: 782px) {
+    #uadt-admin-app {
+        margin: 0 -20px;
+        border-left: none;
+        border-right: none;
+        border-radius: 0;
+    }
+    
+    .uadt-settings-page .form-table th,
+    .uadt-settings-page .form-table td {
+        display: block;
+        width: 100%;
+        padding: 10px 0;
+    }
+    
+    .uadt-settings-page .form-table th {
+        border-bottom: none;
+    }
+}
