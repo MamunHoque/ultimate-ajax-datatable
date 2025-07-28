@@ -404,11 +404,11 @@ class AdminManager
             'max_items_per_page' => get_option('uadt_max_items_per_page', 100),
 
             // Feature Settings
-            'enable_search' => get_option('uadt_enable_search', true),
-            'enable_filters' => get_option('uadt_enable_filters', true),
-            'enable_bulk_actions' => get_option('uadt_enable_bulk_actions', true),
-            'enable_export' => get_option('uadt_enable_export', true),
-            'enable_presets' => get_option('uadt_enable_presets', true),
+            'enable_search' => (bool) get_option('uadt_enable_search', true),
+            'enable_filters' => (bool) get_option('uadt_enable_filters', true),
+            'enable_bulk_actions' => (bool) get_option('uadt_enable_bulk_actions', true),
+            'enable_export' => (bool) get_option('uadt_enable_export', true),
+            'enable_presets' => (bool) get_option('uadt_enable_presets', true),
 
             // Column Settings
             'visible_columns' => get_option('uadt_visible_columns', ['title', 'author', 'categories', 'tags', 'date', 'status']),
@@ -420,12 +420,12 @@ class AdminManager
             'default_order' => get_option('uadt_default_order', 'DESC'),
 
             // Performance Settings
-            'enable_caching' => get_option('uadt_enable_caching', true),
+            'enable_caching' => (bool) get_option('uadt_enable_caching', true),
             'cache_duration' => get_option('uadt_cache_duration', 300),
 
             // UI Settings
-            'show_enhanced_notice' => get_option('uadt_show_enhanced_notice', true),
-            'auto_enhanced_mode' => get_option('uadt_auto_enhanced_mode', false),
+            'show_enhanced_notice' => (bool) get_option('uadt_show_enhanced_notice', true),
+            'auto_enhanced_mode' => (bool) get_option('uadt_auto_enhanced_mode', false),
         ];
     }
 
@@ -493,8 +493,17 @@ class AdminManager
         }
 
         // Get plugin settings
-        $auto_enhanced_mode = get_option('uadt_auto_enhanced_mode', false);
-        $show_enhanced_notice = get_option('uadt_show_enhanced_notice', true);
+        $auto_enhanced_mode = (bool) get_option('uadt_auto_enhanced_mode', false);
+        $show_enhanced_notice = (bool) get_option('uadt_show_enhanced_notice', true);
+
+        // Debug logging (only for admin users)
+        if (current_user_can('manage_options') && defined('WP_DEBUG') && WP_DEBUG) {
+            error_log("UADT Debug - maybe_replace_posts_table:");
+            error_log("  - typenow: " . $typenow);
+            error_log("  - auto_enhanced_mode: " . ($auto_enhanced_mode ? 'true' : 'false'));
+            error_log("  - show_enhanced_notice: " . ($show_enhanced_notice ? 'true' : 'false'));
+            error_log("  - GET uadt_mode: " . (isset($_GET['uadt_mode']) ? $_GET['uadt_mode'] : 'not set'));
+        }
 
         // Check if user explicitly wants standard mode
         $force_standard_mode = isset($_GET['uadt_mode']) && $_GET['uadt_mode'] === 'standard';
@@ -510,6 +519,12 @@ class AdminManager
                 // Manual enhanced mode via URL parameter
                 $should_show_enhanced = true;
             }
+        }
+
+        // Debug logging
+        if (current_user_can('manage_options') && defined('WP_DEBUG') && WP_DEBUG) {
+            error_log("  - force_standard_mode: " . ($force_standard_mode ? 'true' : 'false'));
+            error_log("  - should_show_enhanced: " . ($should_show_enhanced ? 'true' : 'false'));
         }
 
         if ($should_show_enhanced) {
@@ -542,7 +557,15 @@ class AdminManager
         }
 
         // Get plugin settings
-        $auto_enhanced_mode = get_option('uadt_auto_enhanced_mode', false);
+        $auto_enhanced_mode = (bool) get_option('uadt_auto_enhanced_mode', false);
+
+        // Debug logging (only for admin users)
+        if (current_user_can('manage_options') && defined('WP_DEBUG') && WP_DEBUG) {
+            error_log("UADT Debug - add_posts_page_integration:");
+            error_log("  - typenow: " . $typenow);
+            error_log("  - auto_enhanced_mode: " . ($auto_enhanced_mode ? 'true' : 'false'));
+            error_log("  - GET uadt_mode: " . (isset($_GET['uadt_mode']) ? $_GET['uadt_mode'] : 'not set'));
+        }
 
         // Check if user explicitly wants standard mode
         $force_standard_mode = isset($_GET['uadt_mode']) && $_GET['uadt_mode'] === 'standard';
@@ -560,9 +583,22 @@ class AdminManager
             }
         }
 
+        // Debug logging
+        if (current_user_can('manage_options') && defined('WP_DEBUG') && WP_DEBUG) {
+            error_log("  - force_standard_mode: " . ($force_standard_mode ? 'true' : 'false'));
+            error_log("  - should_show_enhanced: " . ($should_show_enhanced ? 'true' : 'false'));
+        }
+
         // Only show enhanced mode if conditions are met
         if (!$should_show_enhanced) {
+            if (current_user_can('manage_options') && defined('WP_DEBUG') && WP_DEBUG) {
+                error_log("  - RETURNING EARLY - Enhanced mode not enabled");
+            }
             return;
+        }
+
+        if (current_user_can('manage_options') && defined('WP_DEBUG') && WP_DEBUG) {
+            error_log("  - LOADING ENHANCED INTERFACE");
         }
 
         ?>
