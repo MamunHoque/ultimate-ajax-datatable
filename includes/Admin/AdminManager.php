@@ -152,27 +152,20 @@ class AdminManager
      */
     public function add_admin_menu()
     {
+        // Add top-level menu page for settings
         add_menu_page(
-            __('DataTable Manager', 'ultimate-ajax-datatable'),
-            __('DataTable Manager', 'ultimate-ajax-datatable'),
+            __('Ultimate Ajax DataTable', 'ultimate-ajax-datatable'),
+            __('Ajax DataTable', 'ultimate-ajax-datatable'),
             'manage_options',
-            'uadt-manager',
-            [$this, 'admin_page'],
+            'uadt-settings',
+            [$this, 'settings_page'],
             'dashicons-list-view',
             30
         );
 
+        // Add submenu for test data
         add_submenu_page(
-            'uadt-manager',
-            __('Settings', 'ultimate-ajax-datatable'),
-            __('Settings', 'ultimate-ajax-datatable'),
-            'manage_options',
             'uadt-settings',
-            [$this, 'settings_page']
-        );
-
-        add_submenu_page(
-            'uadt-manager',
             __('Test Data', 'ultimate-ajax-datatable'),
             __('Test Data', 'ultimate-ajax-datatable'),
             'manage_options',
@@ -272,18 +265,7 @@ class AdminManager
         ]);
     }
 
-    /**
-     * Main admin page
-     */
-    public function admin_page()
-    {
-        ?>
-        <div class="wrap">
-            <h1><?php echo esc_html__('DataTable Manager', 'ultimate-ajax-datatable'); ?></h1>
-            <div id="uadt-admin-app"></div>
-        </div>
-        <?php
-    }
+
 
     /**
      * Settings page
@@ -300,7 +282,7 @@ class AdminManager
 
         ?>
         <div class="wrap">
-            <h1><?php echo esc_html__('Ultimate Ajax DataTable Settings', 'ultimate-ajax-datatable'); ?></h1>
+            <h1><?php echo esc_html__('Ultimate Ajax DataTable', 'ultimate-ajax-datatable'); ?></h1>
 
             <?php $this->render_settings_tabs($active_tab); ?>
 
