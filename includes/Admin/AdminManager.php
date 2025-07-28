@@ -539,15 +539,27 @@ class AdminManager
     {
         global $typenow;
 
+        // Debug: Add admin notice to see if this method is called
+        add_action('admin_notices', function() {
+            echo '<div class="notice notice-info"><p>DEBUG: maybe_hide_standard_table called for post type: ' . esc_html($GLOBALS['typenow']) . '</p></div>';
+        });
+
         // Only apply to enabled post types
         $enabled_post_types = get_option('uadt_enabled_post_types', ['post']);
 
         if (!in_array($typenow, $enabled_post_types)) {
+            add_action('admin_notices', function() {
+                echo '<div class="notice notice-warning"><p>DEBUG: Post type not enabled: ' . esc_html($GLOBALS['typenow']) . '</p></div>';
+            });
             return;
         }
 
         // Get plugin settings
         $auto_enhanced_mode = (bool) get_option('uadt_auto_enhanced_mode', false);
+
+        add_action('admin_notices', function() use ($auto_enhanced_mode) {
+            echo '<div class="notice notice-info"><p>DEBUG: auto_enhanced_mode = ' . ($auto_enhanced_mode ? 'TRUE' : 'FALSE') . '</p></div>';
+        });
 
         // Check if user explicitly wants standard mode
         $force_standard_mode = isset($_GET['uadt_mode']) && $_GET['uadt_mode'] === 'standard';
@@ -565,10 +577,18 @@ class AdminManager
             }
         }
 
+        add_action('admin_notices', function() use ($should_show_enhanced) {
+            echo '<div class="notice notice-info"><p>DEBUG: should_show_enhanced = ' . ($should_show_enhanced ? 'TRUE' : 'FALSE') . '</p></div>';
+        });
+
         // Only hide standard table if enhanced mode should be shown
         if (!$should_show_enhanced) {
             return;
         }
+
+        add_action('admin_notices', function() {
+            echo '<div class="notice notice-success"><p>DEBUG: HIDING STANDARD TABLE!</p></div>';
+        });
 
 
 
