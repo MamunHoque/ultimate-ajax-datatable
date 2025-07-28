@@ -30,6 +30,7 @@ class AdminManager
 
         // Add data table to standard WordPress posts page
         add_action('load-edit.php', [$this, 'maybe_replace_posts_table']);
+        add_action('admin_head-edit.php', [$this, 'maybe_hide_standard_table']);
         add_action('admin_footer-edit.php', [$this, 'add_posts_page_integration']);
     }
 
@@ -543,6 +544,76 @@ class AdminManager
     }
 
     /**
+     * Hide standard WordPress table when enhanced mode should be shown
+     */
+    public function maybe_hide_standard_table()
+    {
+        global $typenow;
+
+        // Only apply to enabled post types
+        $enabled_post_types = get_option('uadt_enabled_post_types', ['post']);
+
+        if (!in_array($typenow, $enabled_post_types)) {
+            return;
+        }
+
+        // Get plugin settings
+        $auto_enhanced_mode = (bool) get_option('uadt_auto_enhanced_mode', false);
+
+        // Check if user explicitly wants standard mode
+        $force_standard_mode = isset($_GET['uadt_mode']) && $_GET['uadt_mode'] === 'standard';
+
+        // Determine if we should show enhanced mode
+        $should_show_enhanced = false;
+
+        if (!$force_standard_mode) {
+            if ($auto_enhanced_mode) {
+                // Auto enhanced mode is enabled - show enhanced interface unless explicitly overridden
+                $should_show_enhanced = true;
+            } elseif (isset($_GET['uadt_mode']) && $_GET['uadt_mode'] === 'enhanced') {
+                // Manual enhanced mode via URL parameter
+                $should_show_enhanced = true;
+            }
+        }
+
+        // Only hide standard table if enhanced mode should be shown
+        if (!$should_show_enhanced) {
+            return;
+        }
+
+        // Debug logging
+        if (current_user_can('manage_options') && defined('WP_DEBUG') && WP_DEBUG) {
+            error_log("UADT Debug - maybe_hide_standard_table: HIDING STANDARD TABLE");
+        }
+
+        // Hide the standard WordPress table elements early
+        ?>
+        <style type="text/css">
+        /* Hide standard WordPress posts table when enhanced mode is active */
+        .wp-list-table,
+        .tablenav,
+        .search-box,
+        .subsubsub,
+        .wp-header-end + .notice,
+        .wp-header-end + .updated,
+        .wp-header-end + .error {
+            display: none !important;
+        }
+
+        /* Hide the "Add New" button in the page header since we'll show our own */
+        .page-title-action {
+            display: none !important;
+        }
+
+        /* Ensure our enhanced interface has proper spacing */
+        .wrap {
+            margin-top: 10px;
+        }
+        </style>
+        <?php
+    }
+
+    /**
      * Add our data table integration to the posts page
      */
     public function add_posts_page_integration()
@@ -1026,11 +1097,8 @@ class AdminManager
 
         <script type="text/javascript">
         jQuery(document).ready(function($) {
-            // Hide the default posts table and related elements
-            $('.wp-list-table').hide();
-            $('.tablenav').hide();
-            $('.search-box').hide();
-            $('.subsubsub').hide();
+            // Standard table should already be hidden by CSS in head
+            // Just ensure our enhanced interface is properly initialized
 
             // Hide the original Add New button temporarily
             $('.page-title-action').hide();
