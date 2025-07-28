@@ -227,8 +227,10 @@ const DataTable = ({ filters, onFilterChange }: DataTableProps) => {
 
       {/* Loading Overlay */}
       {isFetching && data && (
-        <div className="absolute inset-0 bg-white bg-opacity-50 flex items-center justify-center">
-          <LoadingSpinner size="small" />
+        <div className="relative">
+          <div className="absolute inset-0 bg-white bg-opacity-50 flex items-center justify-center z-10">
+            <LoadingSpinner size="small" />
+          </div>
         </div>
       )}
     </div>

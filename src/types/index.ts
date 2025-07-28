@@ -44,6 +44,7 @@ export interface Category {
   id: number;
   name: string;
   slug: string;
+  count?: number;
 }
 
 // Tag interface
@@ -51,6 +52,7 @@ export interface Tag {
   id: number;
   name: string;
   slug: string;
+  count?: number;
 }
 
 // Author interface

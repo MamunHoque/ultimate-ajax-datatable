@@ -23,6 +23,81 @@
     min-height: 600px;
 }
 
+/* WordPress Admin Integration Styles */
+.uadt-app {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+    color: #1d2327;
+}
+
+.text-2xl {
+    font-size: 1.5rem;
+    line-height: 2rem;
+}
+
+.font-semibold {
+    font-weight: 600;
+}
+
+.text-wp-text {
+    color: #1d2327;
+}
+
+.text-wp-text-light {
+    color: #646970;
+}
+
+.text-wp-blue {
+    color: #0073aa;
+}
+
+.text-wp-blue-dark {
+    color: #005177;
+}
+
+.mb-2 {
+    margin-bottom: 0.5rem;
+}
+
+.mb-4 {
+    margin-bottom: 1rem;
+}
+
+.mb-6 {
+    margin-bottom: 1.5rem;
+}
+
+.p-8 {
+    padding: 2rem;
+}
+
+.text-center {
+    text-align: center;
+}
+
+.text-red-600 {
+    color: #dc2626;
+}
+
+.bg-white {
+    background-color: #fff;
+}
+
+.border {
+    border-width: 1px;
+}
+
+.border-wp-gray-dark {
+    border-color: #dcdcde;
+}
+
+.rounded-lg {
+    border-radius: 0.5rem;
+}
+
+.overflow-x-auto {
+    overflow-x: auto;
+}
+
 /* Loading States */
 .uadt-loading {
     display: flex;
@@ -107,4 +182,26 @@
     .uadt-settings-page .form-table th {
         border-bottom: none;
     }
+}
+
+/* Additional Filter Panel Styles */
+.uadt-filter-panel {
+    background: #fff;
+    border: 1px solid #dcdcde;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 24px;
+}
+
+.uadt-filter-label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #1d2327;
+    margin-bottom: 0.25rem;
+}
+
+/* Hover effects */
+.hover\\:text-wp-blue-dark:hover {
+    color: #005177;
 }

@@ -1,10 +1,9 @@
-import apiFetch from '@wordpress/api-fetch';
-import { 
-  FilterState, 
-  PostsResponse, 
-  FilterOptions, 
-  BulkActionResult, 
-  SearchSuggestions 
+import {
+  FilterState,
+  PostsResponse,
+  FilterOptions,
+  BulkActionResult,
+  SearchSuggestions
 } from '../types';
 
 // Base API URL
@@ -13,11 +12,21 @@ const API_BASE = window.uadtAdmin?.apiUrl || '/wp-json/uadt/v1/';
 // API request wrapper with error handling
 const apiRequest = async <T>(endpoint: string, options: RequestInit = {}): Promise<T> => {
   try {
-    const response = await apiFetch({
-      path: `${API_BASE}${endpoint}`,
-      ...options,
-    });
-    return response as T;
+    const url = `${API_BASE}${endpoint}`;
+    const defaultOptions: RequestInit = {
+      headers: {
+        'Content-Type': 'application/json',
+        'X-WP-Nonce': window.uadtAdmin?.nonce || '',
+      },
+    };
+
+    const response = await fetch(url, { ...defaultOptions, ...options });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    return await response.json();
   } catch (error) {
     console.error('API Request Error:', error);
     throw error;
@@ -58,29 +67,29 @@ export const getSearchSuggestions = async (
 
 // Perform bulk actions
 export const performBulkAction = async (
-  action: string, 
+  action: string,
   postIds: number[]
 ): Promise<BulkActionResult> => {
   return apiRequest<BulkActionResult>('posts/bulk', {
     method: 'POST',
-    data: {
+    body: JSON.stringify({
       action,
       post_ids: postIds,
-    },
+    }),
   });
 };
 
 // Export data
 export const exportData = async (
-  format: 'csv' | 'excel', 
+  format: 'csv' | 'excel',
   filters: FilterState
 ): Promise<{ message: string }> => {
   return apiRequest<{ message: string }>('export', {
     method: 'POST',
-    data: {
+    body: JSON.stringify({
       format,
       ...filters,
-    },
+    }),
   });
 };
 

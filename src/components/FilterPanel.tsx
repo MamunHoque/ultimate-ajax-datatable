@@ -26,10 +26,10 @@ const FilterPanel = ({ filters, onFilterChange, onClearFilters }: FilterPanelPro
   const handleInputChange = (key: keyof FilterState, value: string | number) => {
     if (key === 'search') {
       // For search, use debounced change
-      debouncedFilterChange({ [key]: value, page: 1 });
+      debouncedFilterChange({ [key]: String(value), page: 1 });
     } else {
       // For other filters, change immediately
-      onFilterChange({ [key]: value, page: 1 });
+      onFilterChange({ [key]: String(value), page: 1 });
     }
   };
 
@@ -149,7 +149,7 @@ const FilterPanel = ({ filters, onFilterChange, onClearFilters }: FilterPanelPro
                   <option value="">All Categories</option>
                   {filterOptions?.categories?.map((category) => (
                     <option key={category.id} value={category.slug}>
-                      {category.name} ({category.count})
+                      {category.name} {category.count ? `(${category.count})` : ''}
                     </option>
                   ))}
                 </select>
@@ -166,7 +166,7 @@ const FilterPanel = ({ filters, onFilterChange, onClearFilters }: FilterPanelPro
                   <option value="">All Tags</option>
                   {filterOptions?.tags?.map((tag) => (
                     <option key={tag.id} value={tag.slug}>
-                      {tag.name} ({tag.count})
+                      {tag.name} {tag.count ? `(${tag.count})` : ''}
                     </option>
                   ))}
                 </select>

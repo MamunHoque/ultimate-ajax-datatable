@@ -44,9 +44,6 @@ module.exports = (env, argv) => {
     externals: {
       react: 'React',
       'react-dom': 'ReactDOM',
-      '@wordpress/element': 'wp.element',
-      '@wordpress/api-fetch': 'wp.apiFetch',
-      '@wordpress/i18n': 'wp.i18n',
     },
     optimization: {
       minimize: isProduction,

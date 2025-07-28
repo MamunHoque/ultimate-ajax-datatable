@@ -80,6 +80,23 @@ class AdminManager
         // Enqueue WordPress media scripts
         wp_enqueue_media();
 
+        // Enqueue React and ReactDOM from CDN
+        wp_enqueue_script(
+            'react',
+            'https://unpkg.com/react@18/umd/react.production.min.js',
+            [],
+            '18.2.0',
+            true
+        );
+
+        wp_enqueue_script(
+            'react-dom',
+            'https://unpkg.com/react-dom@18/umd/react-dom.production.min.js',
+            ['react'],
+            '18.2.0',
+            true
+        );
+
         // Enqueue our admin styles
         wp_enqueue_style(
             'uadt-admin-style',
@@ -88,11 +105,11 @@ class AdminManager
             UADT_VERSION
         );
 
-        // Enqueue our React app (will be built later)
+        // Enqueue our React app
         wp_enqueue_script(
             'uadt-admin-app',
             UADT_ASSETS_URL . 'js/admin-app.js',
-            ['wp-element', 'wp-api-fetch'],
+            ['react', 'react-dom'],
             UADT_VERSION,
             true
         );
